@@ -1,7 +1,7 @@
 import type { NumberedEntry, ScreenGroup, SectionGroup, SpecModel } from '../model'
 import { KIND_LABELS, KINDS, type Requirement } from '../types'
 import { escapeHtml } from './escape'
-import { linkify } from './linkify'
+import { linkify, plainText } from './linkify'
 
 interface Lookup {
   readonly titleOf: (id: string) => string | undefined
@@ -28,20 +28,23 @@ function renderShot(entry: NumberedEntry): string {
   return `<figure class="shot"><button type="button" class="zoom" data-src="${escapeHtml(entry.image)}"><img loading="lazy" src="${escapeHtml(entry.image)}" alt="${escapeHtml(entry.title)}"></button>${overlay}</figure>`
 }
 
+/** 개발자가 바로 코드로 찾아갈 수 있게 ID와 소스를 본문에 보인다. */
 function renderMeta(entry: NumberedEntry): string {
-  const sources = (entry.source ?? []).map((file) => `<li><code>${escapeHtml(file)}</code></li>`)
-  return `<details class="meta"><summary>ID · 소스</summary><p><code>${escapeHtml(entry.id)}</code></p>${
-    sources.length ? `<ul>${sources.join('')}</ul>` : ''
-  }</details>`
+  const sources = (entry.source ?? []).map((file) => `<code>${escapeHtml(file)}</code>`)
+  const sourceRow = sources.length ? `<dt>소스</dt><dd>${sources.join('<br>')}</dd>` : ''
+  return `<dl class="meta"><dt>ID</dt><dd><code>${escapeHtml(entry.id)}</code></dd>${sourceRow}</dl>`
 }
 
 function renderCard(entry: NumberedEntry, lookup: Lookup): string {
-  const search = [entry.title, entry.description ?? '', entry.id, entry.route ?? ''].join(' ').toLowerCase()
+  const description = entry.description ? plainText(entry.description, lookup.titleOf) : ''
+  const search = [entry.title, description, entry.id, entry.route ?? '', ...(entry.source ?? [])]
+    .join(' ')
+    .toLowerCase()
   const reqs = entry.links.map((link) => link.req).join(' ')
-  const description = entry.description ? `<div class="desc">${linkify(entry.description, lookup.titleOf)}</div>` : ''
+  const descHtml = entry.description ? `<div class="desc">${linkify(entry.description, lookup.titleOf)}</div>` : ''
   return `<article class="card" id="cap-${entry.id}" data-kind="${entry.kind}" data-reqs="${escapeHtml(reqs)}" data-search="${escapeHtml(search)}">
 <header><span class="num">${entry.number}</span><span class="kind k-${entry.kind}">${KIND_LABELS[entry.kind]}</span><h4>${escapeHtml(entry.title)}</h4></header>
-${renderShot(entry)}${description}${renderChips(entry, lookup)}${renderMeta(entry)}
+${renderShot(entry)}${descHtml}${renderChips(entry, lookup)}${renderMeta(entry)}
 </article>`
 }
 

@@ -36,7 +36,8 @@ a{color:var(--accent)}code{font-size:12px;background:var(--bg);padding:1px 5px;b
 .chip,.pill{font-size:12px;border-radius:999px;padding:1px 9px;text-decoration:none;color:#fff;background:var(--na)}
 .st-implemented{background:var(--ok)}.st-partial{background:var(--warn)}.st-planned{background:var(--plan)}
 .st-notApplicable,.st-unclassified{background:var(--na)}
-.meta{font-size:12px;color:var(--muted)}.meta ul{margin:4px 0;padding-left:18px}
+.meta{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;margin:8px 0 0;font-size:12px;color:var(--muted)}
+.meta dt{font-weight:600}.meta dd{margin:0;word-break:break-all}
 .card.focus{box-shadow:0 0 0 3px var(--accent)}.card.flash,.req.flash{animation:flash 1.2s}
 @keyframes flash{from{background:var(--hi)}}
 .reqs-wrap{padding:20px;max-width:1100px}

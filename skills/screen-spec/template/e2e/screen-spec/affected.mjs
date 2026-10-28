@@ -2,8 +2,12 @@
 /**
  * 업데이트 모드 입력을 만든다: 기준 커밋 이후 바뀐 파일 → 영향받는 캡처.
  * 사용: node e2e/screen-spec/affected.mjs [기준커밋]
- *   기준커밋을 생략하면 spec.config.ts의 lastBuiltCommit을 쓴다.
- * 출력(JSON): affected(캡처별 바뀐 소스), uncovered(어느 캡처에도 없는 바뀐 소스), failures(직전 실행 실패)
+ *   기준커밋 결정 순서: 인자 → state.json의 lastBuiltCommit → e2e/screen-spec/을 처음 추가한 커밋
+ * 출력(JSON)
+ *   affected        캡처별 바뀐 소스·시나리오
+ *   uncovered       어느 캡처의 source에도 없는 바뀐 앱 소스 (새 화면 또는 source 누락)
+ *   harnessChanged  바뀐 fixtures·공통 목·Playwright 설정·harnessDeps 경로
+ *   failures        직전 실행에서 실패한 테스트
  */
 import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
@@ -11,7 +15,8 @@ import path from 'node:path'
 
 const OUT_DIR = process.env.SCREEN_SPEC_OUT_DIR ?? 'docs/screen-spec'
 const HARNESS_DIR = 'e2e/screen-spec/'
-const SPEC_FILE = `${HARNESS_DIR}support/spec.config.ts`
+const STATE_FILE = `${HARNESS_DIR}state.json`
+const HARNESS_CONFIGS = /^playwright\.screen-spec.*\.config\.[cm]?[jt]s$/
 const SOURCE_EXT = /\.(tsx?|jsx?|vue|svelte|css|scss)$/
 
 // 경로는 모두 현재 폴더(앱 루트) 기준. 한글 파일명이 따옴표로 감싸지지 않게 quotePath를 끈다.
@@ -20,12 +25,31 @@ const git = (args) =>
     .split('\n')
     .filter(Boolean)
 
-function readBaseCommit() {
-  const fromArg = process.argv[2]
-  const text = fromArg ? '' : fs.readFileSync(SPEC_FILE, 'utf8')
-  const base = fromArg ?? text.match(/lastBuiltCommit:\s*['"`]([^'"`]*)['"`]/)?.[1]
+function readJson(file, fallback) {
+  try {
+    return JSON.parse(fs.readFileSync(file, 'utf8'))
+  } catch {
+    return fallback
+  }
+}
+
+function readState() {
+  const state = readJson(STATE_FILE, {})
+  return {
+    lastBuiltCommit: typeof state.lastBuiltCommit === 'string' ? state.lastBuiltCommit : '',
+    harnessDeps: Array.isArray(state.harnessDeps) ? state.harnessDeps : [],
+  }
+}
+
+function firstHarnessCommit() {
+  const commits = git(['log', '--diff-filter=A', '--format=%H', '--', HARNESS_DIR])
+  return commits.at(-1) ?? ''
+}
+
+function resolveBase(state) {
+  const base = process.argv[2] ?? (state.lastBuiltCommit || firstHarnessCommit())
   if (!base) {
-    throw new Error(`기준 커밋이 없습니다. 인자로 넘기거나 ${SPEC_FILE}의 lastBuiltCommit을 채우세요.`)
+    throw new Error(`기준 커밋이 없습니다. 인자로 넘기거나 ${STATE_FILE}의 lastBuiltCommit을 채우세요.`)
   }
   try {
     git(['rev-parse', '--verify', '--quiet', `${base}^{commit}`])
@@ -39,15 +63,9 @@ function changedFiles(base) {
   const committed = git(['diff', '--name-only', '--relative', `${base}..HEAD`])
   const working = git(['diff', '--name-only', '--relative', 'HEAD'])
   const untracked = git(['ls-files', '--others', '--exclude-standard'])
-  return [...new Set([...committed, ...working, ...untracked])].sort()
-}
-
-function readJson(file, fallback) {
-  try {
-    return JSON.parse(fs.readFileSync(file, 'utf8'))
-  } catch {
-    return fallback
-  }
+  return [...new Set([...committed, ...working, ...untracked])]
+    .filter((file) => file !== STATE_FILE)
+    .sort()
 }
 
 function loadEntries() {
@@ -60,10 +78,17 @@ function loadEntries() {
     .filter(Boolean)
 }
 
-function main() {
-  const base = readBaseCommit()
-  const changed = changedFiles(base)
-  const entries = loadEntries()
+function isHarness(file, deps) {
+  return (
+    file.startsWith(HARNESS_DIR) ||
+    HARNESS_CONFIGS.test(file) ||
+    deps.some((dep) => file === dep || file.startsWith(dep.endsWith('/') ? dep : `${dep}/`))
+  )
+}
+
+function classify(changed, entries, deps) {
+  const specFiles = new Set(entries.map((entry) => entry.specFile))
+  const covered = new Set(entries.flatMap((entry) => [...(entry.source ?? []), entry.specFile]))
   const affected = entries
     .map((entry) => ({
       id: entry.id,
@@ -72,15 +97,20 @@ function main() {
       changed: changed.filter((file) => (entry.source ?? []).includes(file) || file === entry.specFile),
     }))
     .filter((entry) => entry.changed.length > 0)
-  const covered = new Set(entries.flatMap((entry) => [...(entry.source ?? []), entry.specFile]))
-  const specFiles = new Set(entries.map((entry) => entry.specFile))
+  const harnessChanged = changed.filter((file) => isHarness(file, deps) && !specFiles.has(file))
   const uncovered = changed.filter(
-    (file) => SOURCE_EXT.test(file) && !covered.has(file) && !file.startsWith(HARNESS_DIR),
+    (file) => SOURCE_EXT.test(file) && !covered.has(file) && !isHarness(file, deps),
   )
-  // fixtures·공통 목·설정 변경: 이 파일을 쓰는 시나리오를 다시 돌려야 한다
-  const harnessChanged = changed.filter((file) => file.startsWith(HARNESS_DIR) && !specFiles.has(file))
+  return { affected, uncovered, harnessChanged }
+}
+
+function main() {
+  const state = readState()
+  const base = resolveBase(state)
+  const changed = changedFiles(base)
+  const entries = loadEntries()
   const failures = readJson(path.join(OUT_DIR, 'report.json'), {}).failures ?? []
-  const result = { base, changedCount: changed.length, affected, uncovered, harnessChanged, failures }
+  const result = { base, changedCount: changed.length, ...classify(changed, entries, state.harnessDeps), failures }
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
 }
 
