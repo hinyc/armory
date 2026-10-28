@@ -5,7 +5,7 @@
   "plugins": [
     {
       "name": "armory",
-      "description": "개인 업무용 스킬 모음: 커밋 정리, 이슈 정리, 진행 대시보드",
+      "description": "개인 업무용 스킬 모음: 프로젝트 관리, 커밋 정리, 이슈 작성, 진행 대시보드",
       "version": "0.1.0",
       "source": "./",
       "author": { "name": "inyeol Hong", "email": "dlsduf@gmail.com" }

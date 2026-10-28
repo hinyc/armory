@@ -1,19 +1,22 @@
 ---
-name: issue-cleanup
-description: Use when the user asks to 정리/정돈 a GitHub issue or Jira ticket that a developer is expected to work on ("이슈 정리", "#N 정리", "티켓 정리", "개발자가 보기 쉽게 바꿔줘"). Checks the issue against the standard issue form (what to do at a glance, why, done criteria, can-start-now) and rewrites the body to fit it without losing the rationale.
+name: issue-writer
+description: Use when the user asks to write a new GitHub issue or Jira ticket for developer work ("이슈 만들어줘", "이슈 작성", "티켓 생성") or to 정리/정돈 an existing one ("이슈 정리", "#N 정리", "티켓 정리", "개발자가 보기 쉽게 바꿔줘"). Writes or rewrites the body to the standard issue form (what to do at a glance, why, done criteria, can-start-now) without inventing requirements or losing the rationale.
 ---
 
-# 이슈 정리
+# 이슈 작성
 
 ## 목적
 
-개발자가 이슈를 **딱 보면 무엇을 해야 하는지** 알고, **왜 해야 하는지** 확인할 수 있게 본문을 표준 이슈 폼에 맞게 정리한다.
-결과물은 정리된 본문이다 (판정 보고서나 댓글이 아니다).
+개발자가 이슈를 **딱 보면 무엇을 해야 하는지** 알고, **왜 해야 하는지** 확인할 수 있게 본문을 표준 이슈 폼에 맞게 쓴다.
+- **새로 작성**: 사용자가 준 내용으로 새 이슈를 만든다.
+- **기존 정리**: 이미 있는 이슈 본문을 폼에 맞게 다시 쓴다.
+
+결과물은 이슈 본문이다 (판정 보고서나 댓글이 아니다).
 
 ## 대상 제한
 
-- **개발자가 할 일로 발행된 이슈·티켓만** 정리한다 (GitHub Issue, Jira).
-- 개발자 작업이 아니면(회의록, 문의, 정책 논의, 추적용 모음, 단순 공유 등) 정리하지 않고 "개발자 작업 아님"이라고만 답하고 끝낸다.
+- **개발자가 할 일로 발행하는 이슈·티켓만** 다룬다 (GitHub Issue, Jira).
+- 개발자 작업이 아니면(회의록, 문의, 정책 논의, 추적용 모음, 단순 공유 등) 작성·정리하지 않고 "개발자 작업 아님"이라고만 답하고 끝낸다.
 
 ## 표준 이슈 폼
 
@@ -36,7 +39,16 @@ description: Use when the user asks to 정리/정돈 a GitHub issue or Jira tick
 - 상위(여러 하위 이슈를 묶는) 이슈는 4번(할 일)을 하위 이슈 목록으로 갈음하고, 5번(완료 조건)은 "하위 이슈 전부 완료"로 쓴다.
 - 이슈 제목은 `[범주][그룹] 무엇을 한다` 형태의 한 줄로, 요약과 어긋나지 않게 한다.
 
-## 절차
+## 절차 — 새로 작성
+
+1. **입력 수집**: 사용자가 준 설명·문서·대화에서 무엇을·왜를 뽑는다. 관련 이슈·PR이 있으면 함께 조회한다.
+2. **중복 확인**: `gh issue list --search "<핵심어>" --state all`(Jira는 Atlassian MCP `searchJiraIssuesUsingJql`)로 같은 이슈가 이미 있는지 확인한다. 있으면 새로 만들지 않고 사용자에게 알린다.
+3. **코드 대조**: 이슈가 가리킬 파일·함수가 실제로 있는지 확인한다. 함수명 기준으로 적는다.
+4. **초안 작성**: 표준 폼에 맞춰 제목과 본문을 쓴다. 근거가 없는 항목(특히 완료 조건·범위 밖)은 만들지 않고 `(미정 — 확인 필요)`로 두고 질문 목록으로 넘긴다.
+5. **사용자 확인**: 제목·본문 초안을 **먼저 보여준다.**
+6. **승인 후 생성**: 사용자가 확인하면 `gh issue create --title "<제목>" --body-file <파일>`(Jira는 Atlassian MCP `createJiraIssue`)로 만들고 링크를 알려준다. 라벨·담당자·마일스톤은 사용자가 지정한 것만 붙인다.
+
+## 절차 — 기존 정리
 
 1. **원문 조회**
    - GitHub: `gh issue view <N> --json number,title,state,body,labels,comments,url` (댓글 내용이 본문을 정정한 경우 반영 여부 확인)
@@ -79,8 +91,8 @@ description: Use when the user asks to 정리/정돈 a GitHub issue or Jira tick
 
 ## 하지 말 것
 
-- 사용자 승인 없이 본문을 교체하지 않는다.
-- 라벨, Status, 날짜 필드, 담당자는 건드리지 않는다. 본문만 다룬다.
+- 사용자 승인 없이 이슈를 만들거나 본문을 교체하지 않는다.
+- 라벨, Status, 날짜 필드, 담당자는 사용자가 지정하지 않으면 건드리지 않는다. 본문만 다룬다.
 - 정리 결과를 댓글로 달지 않는다 (요청이 있을 때만).
 - 원문에 없는 요구·완료 조건·문구를 만들지 않는다. UI 문구·서식은 임의로 정하지 않는다.
 - **개념(conceptpowers) 수정·갱신·검토는 이슈에 넣지 않는다.** 할 일·완료 조건·선행 조건·착수 상태 어디에도 "개념 갱신" 항목을 쓰지 않는다. 개념과 이슈는 분리해서 관리한다. 원문에 있어도 제거한다.
