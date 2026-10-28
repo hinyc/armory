@@ -55,8 +55,12 @@ async function main() {
   const { per, filter } = readArgs(process.argv.slice(2))
   const entries = loadEntries(filter)
   if (entries.length === 0) throw new Error('캡처가 없습니다.')
-  fs.rmSync(REVIEW_DIR, { recursive: true, force: true })
+  // 같은 이름의 이전 모아 보기만 지운다. --filter 결과는 이름이 달라 전체 결과를 지우지 않는다.
+  const prefix = filter ? `sheet-${filter.replace(/[^a-z0-9-]/gi, '_')}-` : 'sheet-'
   fs.mkdirSync(REVIEW_DIR, { recursive: true })
+  fs.readdirSync(REVIEW_DIR)
+    .filter((name) => name.startsWith(prefix) && name.endsWith('.png') && (filter || /^sheet-\d+\.png$/.test(name)))
+    .forEach((name) => fs.rmSync(path.join(REVIEW_DIR, name)))
   const browser = await chromium.launch()
   try {
     const page = await browser.newPage({ viewport: { width: 1640, height: 800 } })
@@ -66,11 +70,11 @@ async function main() {
       fs.writeFileSync(htmlFile, sheetHtml(group))
       await page.goto(pathToFileURL(htmlFile).href)
       await page.waitForLoadState('load')
-      const out = path.join(REVIEW_DIR, `sheet-${String(index + 1).padStart(2, '0')}.png`)
+      const out = path.join(REVIEW_DIR, `${prefix}${String(index + 1).padStart(2, '0')}.png`)
       await page.screenshot({ path: out, fullPage: true })
     }
     fs.rmSync(path.join(REVIEW_DIR, '_sheet.html'), { force: true })
-    process.stdout.write(`[screen-spec:sheet] 캡처 ${entries.length}개 → ${path.relative(process.cwd(), REVIEW_DIR)}/sheet-*.png (${sheets.length}장)\n`)
+    process.stdout.write(`[screen-spec:sheet] 캡처 ${entries.length}개 → ${path.relative(process.cwd(), REVIEW_DIR)}/${prefix}*.png (${sheets.length}장)\n`)
   } finally {
     await browser.close()
   }

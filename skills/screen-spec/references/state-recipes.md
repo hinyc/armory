@@ -66,7 +66,7 @@ await dialog.getByRole('button', { name: '닫기' }).click()
 
 - 다이얼로그 DOM이 `role="dialog"`가 아니면 `spec.config.ts`의 `dialogSelector`를 바꾼다.
 - **여러 다이얼로그가 겹쳐 뜨는 앱**(공용 안내창·확인창·인증창이 따로 있는 경우)에서는 `hasText`를 항상 넘긴다. 빼면 마지막 다이얼로그를 잡아서 엉뚱한 창을 기다릴 수 있다.
-- 돌려받은 locator는 같은 창의 본문이 바뀌어도(입력 → 완료) 계속 쓸 수 있다.
+- 돌려받은 locator는 `hasText`로 걸러져 있어서, **창의 본문이 바뀌면(입력 → 완료) 더는 맞지 않는다.** 본문이 바뀌는 창은 `hasText`에 바뀌지 않는 문구(창 제목)를 넘기거나, 다음 단계에서 `page.locator(SPEC.dialogSelector).filter({ hasText: '새 문구' })`로 다시 찾는다.
 - 열리는 애니메이션은 `reducedMotion`과 `animations: 'disabled'`로 대부분 꺼진다.
 - kind: 입력·선택을 받는 창은 `dialog`, 메시지만 알리는 창(앱이 그린 안내창 포함)은 `alert`.
 

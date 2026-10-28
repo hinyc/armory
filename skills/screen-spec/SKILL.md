@@ -27,7 +27,9 @@ description: Use when the user wants a screen design document (화면설계서, 
 | "업데이트", "바뀐 화면 반영", 실행이 실패함 | **업데이트** | 바뀐 화면의 스크립트·설명만 수정 |
 
 - `e2e/screen-spec/`이 이미 있으면 구축 모드로 가지 않는다. 기존 스크립트를 덮어쓰지 않는다.
-- package.json에 같은 이름(`screen-spec*`)의 스크립트가 이미 있고 다른 구현을 가리키면, 덮어쓰지 말고 사용자에게 묻는다. 승인이 없으면 `ui-spec`, `ui-spec:only`처럼 다른 이름을 쓴다.
+- package.json에 같은 이름(`screen-spec*`)의 스크립트가 이미 있고 다른 구현을 가리키면, 덮어쓰지 말고 사용자에게 묻는다. 승인이 없으면 다른 이름을 쓴다.
+  - 스크립트 이름: `ui-spec`, `ui-spec:only` …
+  - **출력 폴더도 함께 바꾼다**: `docs/screen-spec`을 다른 구현이 쓰고 있으면 `spec.config.ts`의 `outDir`을 `docs/ui-spec`으로 바꾸고, 스크립트의 삭제 경로·gitignore도 맞춘다. 같은 폴더를 쓰면 전체 실행이 다른 구현의 결과물을 지운다.
 
 ## 템플릿
 
@@ -76,7 +78,7 @@ package.json에 추가할 스크립트:
    | 인증 상태 저장 위치 | localStorage·쿠키 → storageState, **sessionStorage → `addInitScript`** (storageState에 안 담긴다) |
    | UI 라이브러리의 다이얼로그 DOM, 여러 다이얼로그가 겹쳐 뜨는지 | `dialogSelector`. 겹쳐 뜨면 `captureDialog`에 항상 `hasText` |
    | 기존 회귀 e2e 인프라(목데이터 빌더, 인증 주입) | 목데이터 빌더·타입은 가져다 쓴다. `test` 픽스처는 템플릿 것을 쓴다(섞으면 목 감시가 빠진다). 가져온 경로는 `state.json`의 `harnessDeps`에 적는다 |
-   | tsconfig가 `e2e/`를 포함하는지, 빌드가 tsc를 돌리는지 | 포함하면 7단계 `tsc --noEmit`이 필수 (깨지면 앱 빌드가 깨진다) |
+   | tsconfig가 `e2e/`를 포함하는지, 빌드가 tsc를 돌리는지 | 포함하면 7단계 `tsc --noEmit`이 필수 (깨지면 앱 빌드가 깨진다). 루트의 Playwright 설정 파일을 이름으로 나열하는 tsconfig면 `playwright.screen-spec*.config.ts`도 추가한다 |
    | package.json·gitignore의 기존 `screen-spec` 항목 | 위 "모드 고르기"의 충돌 규칙 |
 
 1. **화면·상태 목록**
@@ -132,7 +134,8 @@ package.json에 추가할 스크립트:
    - `references/requirements-mapping.md` 기준으로 `mapping.json` 초안을 쓴다. 모든 연결에 근거(rationale)를 쓰고 `draft: true`로 둔다.
    - 사람이 검토를 마쳤다고 할 때만 `draft: false`로 바꾼다.
 7. **생성과 검토**
-   - `pnpm screen-spec`을 실행하고 `report.json`의 실패·경고를 0으로 만든다.
+   - `pnpm screen-spec`을 실행하고 `report.json`의 실패·경고를 0으로 만든다. 설명 길이 기준을 넘은 캡처도 경고로 나온다.
+   - 섹션별 `:only`에서는 통과했는데 전체 실행에서만 시간 초과가 나면 dev 서버 첫 컴파일 탓이다. 템플릿의 `expect.timeout`(15초)을 줄이지 말고, 페이지 첫 기다림은 화면 뼈대(제목·표 머리글)로 한다.
    - `tsc --noEmit`(프로젝트 tsconfig)을 실행해 하네스가 타입 오류를 만들지 않았는지 확인한다.
    - 모아 보기 이미지를 다시 만들어 전체를 한 번 더 훑는다.
    - `docs/screen-spec/index.html`을 열어 사용자와 검토한다. 문구 수정 요청은 시나리오의 description을 고친다.

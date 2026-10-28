@@ -98,6 +98,28 @@ function applyOverrides(sources: Sources): readonly CaptureEntry[] {
   return sources.entries.map((entry) => ({ ...entry, ...sources.overrides[entry.id] }))
 }
 
+/** references/writing-descriptions.md의 길이 기준. [[id|문구]]는 보이는 문구만 센다. */
+const DESCRIPTION_LIMITS: Readonly<Record<CaptureEntry['kind'], number>> = {
+  page: 450,
+  state: 150,
+  dialog: 150,
+  alert: 150,
+  component: 150,
+}
+
+function visibleLength(text: string): number {
+  return text.replace(/\[\[[a-z0-9-]+(?:\|([^\]]+))?\]\]/g, (_, label?: string) => label ?? '').length
+}
+
+function lengthWarnings(entries: readonly CaptureEntry[]): readonly string[] {
+  return entries
+    .filter((entry) => entry.description && visibleLength(entry.description) > DESCRIPTION_LIMITS[entry.kind])
+    .map(
+      (entry) =>
+        `설명이 김 (${entry.kind} ${visibleLength(entry.description ?? '')}자 > ${DESCRIPTION_LIMITS[entry.kind]}자): ${entry.id}`,
+    )
+}
+
 function collectWarnings(sources: Sources): readonly string[] {
   const entryIds = new Set(sources.entries.map((entry) => entry.id))
   const reqIds = new Set(sources.requirements.map((req) => req.id))
@@ -125,6 +147,7 @@ function collectWarnings(sources: Sources): readonly string[] {
     .filter((req, index, all) => all.findIndex((other) => other.id === req.id) !== index)
     .map((req) => `요구사항 id 중복: ${req.id}`)
   return [
+    ...lengthWarnings(applyOverrides(sources)),
     ...unknownSections,
     ...new Set(danglingCaptures),
     ...new Set(danglingReqs),

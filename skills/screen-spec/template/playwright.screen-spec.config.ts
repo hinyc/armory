@@ -7,6 +7,8 @@ export default defineConfig({
   testMatch: /.*\.screen\.ts$/,
   fullyParallel: true,
   retries: 0,
+  // 전체 실행 첫 순간에는 dev 서버가 화면 코드를 처음 컴파일해서 느리다. 기본 5초로는 부족하다.
+  expect: { timeout: 15_000 },
   reporter: [['list'], ['./e2e/screen-spec/support/reporter.ts']],
   use: {
     ...devices['Desktop Chrome'],
@@ -26,5 +28,8 @@ export default defineConfig({
     url: SPEC.baseURL,
     reuseExistingServer: true,
     timeout: 120_000,
+    // dev 서버가 브라우저 콘솔을 다시 찍어 로그가 지저분해진다. 오류만 보인다.
+    stdout: 'ignore',
+    stderr: 'pipe',
   },
 })
