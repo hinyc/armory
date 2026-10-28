@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Status Dashboard</title>
+<!--
+  뷰어(렌더러) — 한 번 만들고 거의 안 고친다.
+  데이터는 같은 폴더의 data.json (또는 manifest.json + 분할 파일).
+  열기: 이 폴더에서  python3 -m http.server  → 표시된 주소 접속
+        (그냥 더블클릭하면 file:// CORS로 데이터 로드 실패)
+-->
+<style>
+  :root {
+    /* 라이트 모드 (기본) */
+    --bg: #f8fafc; --panel: #ffffff; --panel2: #f1f5f9;
+    --text: #0f172a; --muted: #64748b; --border: #e2e8f0;
+    --accent: #3b82f6; --mermaid-bg: #ffffff;
+    --prio-high-fg: #b91c1c; --prio-high-bd: #fecaca;
+    --prio-med-fg: #b45309; --prio-med-bd: #fde68a;
+    --prio-low-fg: #1d4ed8; --prio-low-bd: #bfdbfe;
+  }
+  [data-theme="dark"] {
+    --bg: #0f172a; --panel: #1e293b; --panel2: #273449;
+    --text: #e2e8f0; --muted: #94a3b8; --border: #334155;
+    --accent: #3b82f6; --mermaid-bg: #1e293b;
+    --prio-high-fg: #fca5a5; --prio-high-bd: #7f1d1d;
+    --prio-med-fg: #fcd34d; --prio-med-bd: #78350f;
+    --prio-low-fg: #93c5fd; --prio-low-bd: #1e3a8a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+      "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.5;
+    transition: background .2s, color .2s;
+  }
+  .theme-toggle {
+    margin-left: auto; background: var(--panel); color: var(--text);
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 6px 12px; font-size: 13px; cursor: pointer;
+  }
+  .theme-toggle:hover { border-color: var(--accent); }
+  header {
+    padding: 24px 32px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;
+  }
+  header h1 { margin: 0; font-size: 20px; }
+  header .updated { color: var(--muted); font-size: 13px; }
+  main { padding: 24px 32px; max-width: 1100px; margin: 0 auto; }
+
+  .summary { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+  .chip {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 999px; padding: 6px 14px; font-size: 13px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+
+  .overall { margin: 16px 0 24px; }
+  .bar { background: var(--panel2); border-radius: 6px; height: 10px; overflow: hidden; }
+  .bar > span { display: block; height: 100%; background: var(--accent); transition: width .3s; }
+  .overall .label { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+
+  .controls { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+  .controls input, .controls select {
+    background: var(--panel); color: var(--text); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 12px; font-size: 14px;
+  }
+  .controls input { flex: 1; min-width: 180px; }
+
+  .issues { display: grid; gap: 12px; }
+  .card {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px 18px;
+  }
+  .card .top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .card .id { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .card .title { font-weight: 600; font-size: 15px; }
+  .badge { font-size: 12px; padding: 2px 10px; border-radius: 999px; color: #0b1220; font-weight: 600; }
+  .prio { font-size: 11px; padding: 2px 8px; border-radius: 6px; border: 1px solid var(--border); color: var(--muted); }
+  .prio.high { color: var(--prio-high-fg); border-color: var(--prio-high-bd); }
+  .prio.medium { color: var(--prio-med-fg); border-color: var(--prio-med-bd); }
+  .prio.low { color: var(--prio-low-fg); border-color: var(--prio-low-bd); }
+  .tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tag { font-size: 11px; color: var(--muted); background: var(--panel2); padding: 2px 8px; border-radius: 6px; }
+  .card .meta { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .card .verify { font-size: 13px; margin-top: 8px; color: #cbd5e1; }
+  .card .verify b { color: var(--muted); font-weight: 600; }
+  .card .note { font-size: 13px; margin-top: 6px; color: var(--muted); }
+  .tasks { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 4px; }
+  .tasks li { font-size: 13px; display: flex; gap: 8px; align-items: center; }
+  .tasks li.done { color: var(--muted); text-decoration: line-through; }
+  .miniprog { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+  .miniprog .bar { flex: 1; }
+  .miniprog .pct { font-size: 12px; color: var(--muted); min-width: 36px; text-align: right; }
+  .links { margin-top: 8px; display: flex; gap: 12px; flex-wrap: wrap; }
+  .links a { color: var(--accent); font-size: 12px; text-decoration: none; }
+
+  .flows { margin-top: 40px; }
+  .flows h2 { font-size: 16px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+  .flow-doc { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; margin-top: 12px; }
+  .flow-doc h3 { margin-top: 0; }
+  .mermaid { background: var(--mermaid-bg); border-radius: 8px; padding: 12px; margin: 10px 0; }
+
+  .error {
+    background: #7f1d1d33; border: 1px solid #7f1d1d; border-radius: 12px;
+    padding: 20px; color: #fecaca;
+  }
+  .error code { background: #00000044; padding: 2px 6px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="project">Status Dashboard</h1>
+  <span class="updated" id="updated"></span>
+  <button class="theme-toggle" id="themeToggle">🌙 다크</button>
+</header>
+<main>
+  <div id="content"></div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+(async function () {
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  // ---- 테마 (라이트 기본 / 다크 토글, localStorage 저장) ----
+  const THEME_KEY = "status-dashboard-theme";
+  let theme = localStorage.getItem(THEME_KEY) || "light";
+  function applyTheme(t) {
+    document.documentElement.dataset.theme = t === "dark" ? "dark" : "";
+    $("themeToggle").textContent = t === "dark" ? "☀️ 라이트" : "🌙 다크";
+  }
+  applyTheme(theme);
+  $("themeToggle").addEventListener("click", () => {
+    theme = theme === "dark" ? "light" : "dark";
+    localStorage.setItem(THEME_KEY, theme);
+    applyTheme(theme);
+    renderFlows(); // Mermaid 다이어그램 테마 갱신
+  });
+
+  // ---- 데이터 로드: manifest.json 우선, 없으면 data.json ----
+  async function loadJSON(path) {
+    const res = await fetch(path, { cache: "no-store" });
+    if (!res.ok) throw new Error(`${path}: ${res.status}`);
+    return res.json();
+  }
+
+  async function loadData() {
+    let base;
+    try { base = await loadJSON("manifest.json"); }
+    catch { base = null; }
+
+    if (base && Array.isArray(base.sources)) {
+      const parts = await Promise.all(base.sources.map(loadJSON));
+      const issues = parts.flatMap((p) => p.issues || []);
+      return { ...base, issues, statuses: base.statuses || parts[0]?.statuses };
+    }
+    return loadJSON("data.json");
+  }
+
+  let data;
+  try {
+    data = await loadData();
+  } catch (e) {
+    $("content").innerHTML = `
+      <div class="error">
+        <strong>데이터를 불러오지 못했습니다.</strong>
+        <p>이 페이지를 <code>file://</code>로 직접 열면 브라우저 보안 때문에
+        같은 폴더의 JSON을 읽지 못합니다(CORS).</p>
+        <p>이 폴더에서 아래 명령으로 로컬 서버를 띄운 뒤 접속하세요:</p>
+        <p><code>python3 -m http.server</code></p>
+        <p>또는 VS Code의 <em>Live Server</em> 확장으로 열면 됩니다.</p>
+        <p style="color:#fca5a5cc">상세: ${esc(e.message)}</p>
+      </div>`;
+    return;
+  }
+
+  // ---- 상태 정의 ----
+  const DEFAULT_STATUSES = [
+    { key: "todo", label: "할 일", color: "#94a3b8" },
+    { key: "in-progress", label: "진행중", color: "#3b82f6" },
+    { key: "done", label: "완료", color: "#22c55e" },
+    { key: "blocked", label: "막힘", color: "#ef4444" },
+  ];
+  const statuses = data.statuses?.length ? data.statuses : DEFAULT_STATUSES;
+  const statusMap = Object.fromEntries(statuses.map((s) => [s.key, s]));
+  const issues = data.issues || [];
+
+  $("project").textContent = data.project || "Status Dashboard";
+  if (data.updated) $("updated").textContent = `업데이트: ${data.updated}`;
+
+  // ---- 진행률 ----
+  function progressOf(issue) {
+    if (Array.isArray(issue.tasks) && issue.tasks.length) {
+      const done = issue.tasks.filter((t) => t.done).length;
+      return done / issue.tasks.length;
+    }
+    if (issue.status === "done") return 1;
+    if (issue.status === "in-progress") return 0.5;
+    return 0;
+  }
+  const pct = (n) => Math.round(n * 100);
+
+  // ---- 정적 영역(요약 + 컨트롤 + 컨테이너) ----
+  const overall = issues.length
+    ? issues.reduce((a, i) => a + progressOf(i), 0) / issues.length : 0;
+
+  const counts = {};
+  for (const i of issues) counts[i.status] = (counts[i.status] || 0) + 1;
+
+  $("content").innerHTML = `
+    <div class="summary">
+      ${statuses.map((s) => `
+        <span class="chip">
+          <span class="dot" style="background:${esc(s.color)}"></span>
+          ${esc(s.label)} <b>${counts[s.key] || 0}</b>
+        </span>`).join("")}
+      <span class="chip">전체 <b>${issues.length}</b></span>
+    </div>
+    <div class="overall">
+      <div class="label">전체 진행률 ${pct(overall)}%</div>
+      <div class="bar"><span style="width:${pct(overall)}%"></span></div>
+    </div>
+    <div class="controls">
+      <input id="q" placeholder="제목·태그·내용 검색…" />
+      <select id="fstatus">
+        <option value="">상태: 전체</option>
+        ${statuses.map((s) => `<option value="${esc(s.key)}">${esc(s.label)}</option>`).join("")}
+      </select>
+      <select id="fprio">
+        <option value="">우선순위: 전체</option>
+        <option value="high">high</option>
+        <option value="medium">medium</option>
+        <option value="low">low</option>
+      </select>
+    </div>
+    <div class="issues" id="issues"></div>
+    <div class="flows" id="flows"></div>
+  `;
+
+  // ---- 카드 렌더 ----
+  function cardHTML(issue) {
+    const st = statusMap[issue.status] || { label: issue.status, color: "#64748b" };
+    const p = progressOf(issue);
+    const tasks = (issue.tasks || []).map((t) =>
+      `<li class="${t.done ? "done" : ""}">${t.done ? "✓" : "○"} ${esc(t.text)}</li>`).join("");
+    const tags = (issue.tags || []).map((t) => `<span class="tag">#${esc(t)}</span>`).join("");
+    const links = (issue.links || []).map((l) =>
+      `<a href="${esc(l.url)}" target="_blank" rel="noreferrer">${esc(l.label || l.url)}</a>`).join("");
+    return `
+      <div class="card">
+        <div class="top">
+          ${issue.id != null ? `<span class="id">#${esc(issue.id)}</span>` : ""}
+          <span class="badge" style="background:${esc(st.color)}">${esc(st.label)}</span>
+          ${issue.priority ? `<span class="prio ${esc(issue.priority)}">${esc(issue.priority)}</span>` : ""}
+          <span class="title">${esc(issue.title)}</span>
+          <span class="tags">${tags}</span>
+        </div>
+        ${(issue.created || issue.updated) ? `<div class="meta">${
+          [issue.created && `생성 ${esc(issue.created)}`, issue.updated && `수정 ${esc(issue.updated)}`]
+            .filter(Boolean).join(" · ")}</div>` : ""}
+        ${issue.verify ? `<div class="verify"><b>검증:</b> ${esc(issue.verify)}</div>` : ""}
+        ${issue.note ? `<div class="note">${esc(issue.note)}</div>` : ""}
+        ${tasks ? `<ul class="tasks">${tasks}</ul>` : ""}
+        ${(issue.tasks && issue.tasks.length) ? `
+          <div class="miniprog">
+            <div class="bar"><span style="width:${pct(p)}%"></span></div>
+            <span class="pct">${pct(p)}%</span>
+          </div>` : ""}
+        ${links ? `<div class="links">${links}</div>` : ""}
+      </div>`;
+  }
+
+  const prioRank = { high: 0, medium: 1, low: 2 };
+  function render() {
+    const q = $("q").value.trim().toLowerCase();
+    const fs = $("fstatus").value;
+    const fp = $("fprio").value;
+    const filtered = issues
+      .filter((i) => !fs || i.status === fs)
+      .filter((i) => !fp || i.priority === fp)
+      .filter((i) => {
+        if (!q) return true;
+        const hay = [i.title, i.note, i.verify, ...(i.tags || []),
+          ...(i.tasks || []).map((t) => t.text)].join(" ").toLowerCase();
+        return hay.includes(q);
+      })
+      .sort((a, b) => (prioRank[a.priority] ?? 9) - (prioRank[b.priority] ?? 9));
+    $("issues").innerHTML = filtered.length
+      ? filtered.map(cardHTML).join("")
+      : `<p style="color:var(--muted)">조건에 맞는 항목이 없습니다.</p>`;
+  }
+  $("q").addEventListener("input", render);
+  $("fstatus").addEventListener("change", render);
+  $("fprio").addEventListener("change", render);
+  render();
+
+  // ---- 흐름(Markdown + Mermaid) ----
+  async function renderFlows() {
+    const flows = data.flows || [];
+    if (!flows.length) return;
+    const host = $("flows");
+    host.innerHTML = `<h2>흐름 / 다이어그램</h2>`;
+    for (const path of flows) {
+      try {
+        const md = await (await fetch(path, { cache: "no-store" })).text();
+        host.insertAdjacentHTML("beforeend",
+          `<div class="flow-doc">${mdToHTML(md)}</div>`);
+      } catch {
+        host.insertAdjacentHTML("beforeend",
+          `<div class="flow-doc" style="color:var(--muted)">불러오기 실패: ${esc(path)}</div>`);
+      }
+    }
+    if (window.mermaid) {
+      mermaid.initialize({ startOnLoad: false, theme: theme === "dark" ? "dark" : "default" });
+      await mermaid.run({ querySelector: ".mermaid" });
+    }
+  }
+
+  // 최소 마크다운: 제목(#), mermaid 코드펜스, 그 외 문단
+  function mdToHTML(md) {
+    const out = [];
+    const lines = md.split("\n");
+    let i = 0, para = [];
+    const flush = () => { if (para.length) { out.push(`<p>${esc(para.join(" "))}</p>`); para = []; } };
+    while (i < lines.length) {
+      const line = lines[i];
+      if (line.trim().startsWith("```mermaid")) {
+        flush(); i++;
+        const buf = [];
+        while (i < lines.length && !lines[i].trim().startsWith("```")) buf.push(lines[i++]);
+        i++; // closing fence
+        out.push(`<div class="mermaid">${esc(buf.join("\n"))}</div>`);
+        continue;
+      }
+      const h = line.match(/^(#{1,4})\s+(.*)$/);
+      if (h) { flush(); out.push(`<h${h[1].length + 2}>${esc(h[2])}</h${h[1].length + 2}>`); i++; continue; }
+      if (line.trim() === "") { flush(); i++; continue; }
+      para.push(line.trim()); i++;
+    }
+    flush();
+    return out.join("\n");
+  }
+  renderFlows();
+})();
+</script>
+</body>
+</html>

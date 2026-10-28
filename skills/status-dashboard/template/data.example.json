@@ -1,0 +1,54 @@
+{
+  "project": "예시 프로젝트",
+  "updated": "2026-06-17",
+  "statuses": [
+    { "key": "todo", "label": "할 일", "color": "#94a3b8" },
+    { "key": "in-progress", "label": "진행중", "color": "#3b82f6" },
+    { "key": "done", "label": "완료", "color": "#22c55e" },
+    { "key": "blocked", "label": "막힘", "color": "#ef4444" }
+  ],
+  "issues": [
+    {
+      "id": 1,
+      "title": "로그인 실패 안내 모달",
+      "status": "done",
+      "priority": "high",
+      "tags": ["ui", "auth"],
+      "created": "2026-06-17",
+      "updated": "2026-06-17",
+      "verify": "LoginErrorModal 컴포넌트 존재 + 계정 잠김 분기",
+      "tasks": [
+        { "text": "모달 레이아웃", "done": true },
+        { "text": "계정 잠김 안내", "done": true }
+      ],
+      "note": "계정 잠김 안내까지 반영 완료",
+      "links": []
+    },
+    {
+      "id": 2,
+      "title": "주문 통계 차트 기간별 집계",
+      "status": "in-progress",
+      "priority": "medium",
+      "tags": ["dashboard", "chart"],
+      "created": "2026-06-17",
+      "updated": "2026-06-17",
+      "verify": "차트 컴포넌트에서 기간별 집계 로직 존재",
+      "tasks": [
+        { "text": "기간 필터 연결", "done": true },
+        { "text": "주·월 단위 집계", "done": false }
+      ],
+      "note": "월 단위 집계 작업 중"
+    },
+    {
+      "id": 3,
+      "title": "닉네임 20자 제한 검증",
+      "status": "todo",
+      "priority": "low",
+      "tags": ["validation"],
+      "created": "2026-06-17",
+      "verify": "닉네임 입력에 20자 제한 검증 적용 여부",
+      "tasks": []
+    }
+  ],
+  "flows": ["flows/architecture.md"]
+}
