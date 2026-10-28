@@ -70,7 +70,7 @@ package.json에 추가할 스크립트:
    |---|---|
    | `@playwright/test` 1.45 이상(`page.clock`), 브라우저 설치, `zod`(3·4 모두 됨) | 없으면 설치 명령을 보여주고 승인 후 devDependency로 추가 |
    | dev 서버 명령·포트, **기동에 필요한 환경변수** (백엔드 프록시 주소 등) | `webServerCommand`. API는 모두 목이라 프록시 대상은 닿지 않는 더미 주소(`http://127.0.0.1:9`)로 둬도 된다 |
-   | 뷰포트: 기존 Playwright 설정·고정 해상도(키오스크, vh 레이아웃) | `viewport`. 기존 회귀 테스트 설정이 있으면 그 값을 따른다 |
+   | 뷰포트: 기존 Playwright 설정·고정 해상도(전용 단말, vh 레이아웃) | `viewport`. 기존 회귀 테스트 설정이 있으면 그 값을 따른다 |
    | 차트·애니메이션 라이브러리(Chart.js, ECharts, framer-motion 등) | 있으면 `clockMode: 'flowing'` (없으면 'fixed') |
    | API 호출 계층(fetch·axios)과 기본 경로 | `apiPattern`. 같은 출처 `/api`가 아니면 실제 URL에 맞춘다 |
    | 인증 상태 저장 위치 | localStorage·쿠키 → storageState, **sessionStorage → `addInitScript`** (storageState에 안 담긴다) |
