@@ -32,10 +32,24 @@ function collectErrors(page: Page): () => readonly string[] {
   return () => errors
 }
 
+async function applyClock(page: Page): Promise<void> {
+  if (!SPEC.fixedTime) return
+  const time = new Date(SPEC.fixedTime)
+  await (SPEC.clockMode === 'flowing' ? page.clock.setSystemTime(time) : page.clock.setFixedTime(time))
+}
+
+/**
+ * 이 테스트만 시계를 흐르게 한다 (clockMode가 'fixed'일 때 차트 화면용). page.goto 전에 호출한다.
+ * 시작 시각은 fixedTime 그대로라 날짜 표시는 같다.
+ */
+export async function useFlowingClock(page: Page): Promise<void> {
+  if (SPEC.fixedTime) await page.clock.setSystemTime(new Date(SPEC.fixedTime))
+}
+
 export const test = base.extend<Fixtures>({
   mockApi: [
     async ({ page }, use) => {
-      if (SPEC.fixedTime) await page.clock.setFixedTime(new Date(SPEC.fixedTime))
+      await applyClock(page)
       const api = await installMockApi(page, SPEC.apiPattern)
       await use(api)
       expect(api.unmatched(), '목을 등록하지 않은 API 호출').toEqual([])

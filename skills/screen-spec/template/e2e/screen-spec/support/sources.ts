@@ -1,6 +1,5 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import type { z } from 'zod'
 import { SPEC } from './spec.config'
 import {
   captureEntrySchema,
@@ -18,28 +17,42 @@ export interface Sources {
   readonly requirements: readonly Requirement[]
   readonly mapping: Mapping
   readonly overrides: Overrides
-  readonly warnings: readonly string[]
 }
 
-interface Loaded<T> {
-  readonly value: T
-  readonly warning?: string
+interface Issue {
+  readonly path: readonly PropertyKey[]
+  readonly message: string
 }
 
-function formatIssues(error: z.ZodError): string {
-  return error.issues
+/**
+ * zod 스키마의 safeParse만 쓴다. zod 3과 4는 ZodType 제네릭 의미가 달라서,
+ * 구조만 맞추는 이 타입으로 받아야 두 버전 모두 tsc를 통과한다.
+ */
+interface Parser<T> {
+  safeParse(
+    data: unknown,
+  ):
+    | { readonly success: true; readonly data: T }
+    | { readonly success: false; readonly error: { readonly issues: readonly Issue[] } }
+}
+
+function formatIssues(issues: readonly Issue[]): string {
+  return issues
     .slice(0, 5)
-    .map((issue) => `  - ${issue.path.join('.') || '(root)'}: ${issue.message}`)
+    .map((issue) => `  - ${issue.path.map(String).join('.') || '(root)'}: ${issue.message}`)
     .join('\n')
 }
 
-/** 파일이 없으면 기본값과 경고를, 형식이 틀리면 파일 이름을 담은 오류를 낸다. */
-async function loadJson<T>(file: string, schema: z.ZodType<T>, fallback: T): Promise<Loaded<T>> {
+/**
+ * 파일이 없으면 조용히 기본값을 쓴다 (요구사항 기능을 안 쓰는 프로젝트가 많다).
+ * 형식이 틀리면 파일 경로를 담은 오류로 생성을 중단한다.
+ */
+async function loadJson<T>(file: string, schema: Parser<T>, fallback: T): Promise<T> {
   let raw: string
   try {
     raw = await fs.readFile(file, 'utf8')
   } catch {
-    return { value: fallback, warning: `${path.basename(file)} 없음 (${file}) — 기본값 사용` }
+    return fallback
   }
   let parsed: unknown
   try {
@@ -48,35 +61,28 @@ async function loadJson<T>(file: string, schema: z.ZodType<T>, fallback: T): Pro
     throw new Error(`${file}: JSON 형식 오류 — ${(error as Error).message}`)
   }
   const result = schema.safeParse(parsed)
-  if (!result.success) throw new Error(`${file}: 스키마 오류\n${formatIssues(result.error)}`)
-  return { value: result.data }
+  if (!result.success) throw new Error(`${file}: 스키마 오류\n${formatIssues(result.error.issues)}`)
+  return result.data
 }
 
 async function loadEntries(dataDir: string): Promise<readonly CaptureEntry[]> {
   const names = await fs.readdir(dataDir).catch(() => [] as string[])
   const files = names.filter((name) => name.endsWith('.json')).sort()
   const loaded = await Promise.all(
-    files.map((name) => loadJson(path.join(dataDir, name), captureEntrySchema.nullable(), null)),
+    files.map((name) =>
+      loadJson<CaptureEntry | null>(path.join(dataDir, name), captureEntrySchema, null),
+    ),
   )
-  return loaded.map((item) => item.value).filter((entry): entry is CaptureEntry => entry !== null)
+  return loaded.filter((entry): entry is CaptureEntry => entry !== null)
 }
 
 export async function loadSources(): Promise<Sources> {
   const dir = SPEC.sourceDir
   const [entries, requirements, mapping, overrides] = await Promise.all([
     loadEntries(path.join(SPEC.outDir, 'data')),
-    loadJson(path.join(dir, 'requirements.json'), requirementSchema.array(), []),
-    loadJson(path.join(dir, 'mapping.json'), mappingSchema, { draft: true, links: {} }),
-    loadJson(path.join(dir, 'overrides.json'), overridesSchema, {}),
+    loadJson<Requirement[]>(path.join(dir, 'requirements.json'), requirementSchema.array(), []),
+    loadJson<Mapping>(path.join(dir, 'mapping.json'), mappingSchema, { draft: true, links: {} }),
+    loadJson<Overrides>(path.join(dir, 'overrides.json'), overridesSchema, {}),
   ])
-  const warnings = [requirements, mapping, overrides]
-    .map((loaded) => loaded.warning)
-    .filter((warning): warning is string => Boolean(warning))
-  return {
-    entries,
-    requirements: requirements.value,
-    mapping: mapping.value,
-    overrides: overrides.value,
-    warnings,
-  }
+  return { entries, requirements, mapping, overrides }
 }

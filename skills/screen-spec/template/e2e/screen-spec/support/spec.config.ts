@@ -11,6 +11,8 @@ export interface SectionDef {
   readonly label: string
 }
 
+export type ClockMode = 'fixed' | 'flowing'
+
 export interface ConsoleAllow {
   readonly pattern: RegExp
   readonly reason: string
@@ -39,8 +41,17 @@ export const SPEC = {
   viewport: { width: 1440, height: 900 },
   locale: 'ko-KR',
   timezoneId: 'Asia/Seoul',
-  /** 화면에 찍히는 "오늘"을 고정한다. 비우면 실제 시각을 쓴다. */
+  /** 화면에 찍히는 "오늘". 비우면 실제 시각을 쓴다. */
   fixedTime: '2026-01-15T09:00:00+09:00',
+  /**
+   * 시계 방식
+   * - 'fixed': 시각이 멈춘다. 날짜·시계 표시가 매번 같다.
+   *   Date.now()로 애니메이션을 진행하는 라이브러리(Chart.js 등)는 0에서 멈춰 빈 차트가 찍힌다.
+   * - 'flowing': fixedTime에서 시작해 실제처럼 흐른다. 차트·애니메이션이 있으면 이것을 쓴다.
+   *   초 단위 시계 표시는 실행마다 조금 달라진다.
+   * 테스트 하나만 바꾸려면 support/test.ts의 useFlowingClock(page)를 goto 전에 호출한다.
+   */
+  clockMode: 'fixed' as ClockMode,
 
   /** 다이얼로그 탐색 셀렉터 (UI 라이브러리에 맞게 조정) */
   dialogSelector: '[role="dialog"], [role="alertdialog"]',
@@ -52,7 +63,4 @@ export const SPEC = {
   sections: [
     { key: 'main', label: '메인' },
   ] as readonly SectionDef[],
-
-  /** 업데이트 모드 기준점: 마지막으로 문서를 맞춘 커밋 (에이전트가 갱신) */
-  lastBuiltCommit: '',
 } as const

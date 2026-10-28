@@ -11,7 +11,7 @@
 | `id` | kebab-case, 전체에서 유일. 파일 이름으로도 쓴다 |
 | `section` | `spec.config.ts`의 `sections` key. 목차 순서가 된다 |
 | `screen` | 같은 값끼리 한 화면으로 묶인다 |
-| `kind` | `page` · `state` · `dialog` · `alert` · `component` |
+| `kind` | `page`(기본 모습) · `state`(같은 화면의 다른 모습) · `dialog`(입력·선택을 받는 창) · `alert`(메시지만 알리는 창, 앱이 그린 것 포함) · `component`(일부 확대) |
 | `title`, `description` | 제목과 설명 |
 | `route` | 화면 경로 |
 | `source` | 이 캡처를 그리는 소스 파일 목록. 업데이트 모드의 영향 분석 기준 |
@@ -60,7 +60,7 @@
 
 | 상황 | 결과 |
 |---|---|
-| 외부 파일이 없음 | 경고 후 기본값으로 진행 |
+| 외부 파일·폴더가 없음 | 경고 없이 기본값으로 진행 (요구사항 기능을 안 쓰는 경우) |
 | JSON 문법 오류, 스키마 오류 | 파일 경로와 위치를 출력하고 생성 중단 (종료 코드 1) |
 | 없는 캡처·요구사항·부모를 가리킴 | 경고 (`report.json`의 `warnings`) |
 | `sections`에 없는 section | 경고, 목차 맨 뒤로 |

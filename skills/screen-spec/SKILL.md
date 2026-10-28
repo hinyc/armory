@@ -26,7 +26,8 @@ description: Use when the user wants a screen design document (화면설계서, 
 | "다시 뽑아줘", "최신 화면으로" | **실행** | 없음. 스크립트만 실행 |
 | "업데이트", "바뀐 화면 반영", 실행이 실패함 | **업데이트** | 바뀐 화면의 스크립트·설명만 수정 |
 
-`e2e/screen-spec/`이 이미 있으면 구축 모드로 가지 않는다. 기존 스크립트를 덮어쓰지 않는다.
+- `e2e/screen-spec/`이 이미 있으면 구축 모드로 가지 않는다. 기존 스크립트를 덮어쓰지 않는다.
+- package.json에 같은 이름(`screen-spec*`)의 스크립트가 이미 있고 다른 구현을 가리키면, 덮어쓰지 말고 사용자에게 묻는다. 승인이 없으면 `ui-spec`, `ui-spec:only`처럼 다른 이름을 쓴다.
 
 ## 템플릿
 
@@ -36,9 +37,11 @@ description: Use when the user wants a screen design document (화면설계서, 
 |---|---|---|
 | `playwright.screen-spec.config.ts` | 캡처 실행 설정 (뷰포트·로케일·시간대·모션 줄이기 고정) | 필요 시 storageState만 |
 | `playwright.screen-spec-html.config.ts` | 캡처 없이 HTML만 재생성 | 안 함 |
-| `e2e/screen-spec/support/spec.config.ts` | 제목, 섹션 순서, dev 서버, API 패턴, 고정 시각, 다이얼로그 셀렉터 | **프로젝트마다 채움** |
+| `e2e/screen-spec/support/spec.config.ts` | 제목, 섹션 순서, dev 서버, API 패턴, 뷰포트, 시계 방식, 다이얼로그 셀렉터 | **프로젝트마다 채움** |
 | `e2e/screen-spec/support/*` | 목 API, 캡처, 데이터 검증, HTML 생성, 리포터 | 안 함 |
+| `e2e/screen-spec/state.json` | 업데이트 기준 커밋(`lastBuiltCommit`), 하네스 밖 의존 경로(`harnessDeps`) | 에이전트가 갱신 |
 | `e2e/screen-spec/affected.mjs` | 업데이트 모드: 바뀐 파일 → 영향받는 캡처 | 안 함 |
+| `e2e/screen-spec/contact-sheet.mjs` | 스샷 검토용 모아 보기 이미지 생성 | 안 함 |
 | `e2e/screen-spec/example.screen.ts` | 시나리오 예시 | 참고 후 삭제 |
 | `external.example/` | 외부 데이터 예시 | 외부 폴더로 복사해 씀 |
 
@@ -49,31 +52,55 @@ package.json에 추가할 스크립트:
   "screen-spec": "node -e \"fs.rmSync('docs/screen-spec',{recursive:true,force:true})\" && playwright test -c playwright.screen-spec.config.ts",
   "screen-spec:only": "playwright test -c playwright.screen-spec.config.ts",
   "screen-spec:html": "playwright test -c playwright.screen-spec-html.config.ts --pass-with-no-tests",
-  "screen-spec:affected": "node e2e/screen-spec/affected.mjs"
+  "screen-spec:affected": "node e2e/screen-spec/affected.mjs",
+  "screen-spec:sheet": "node e2e/screen-spec/contact-sheet.mjs"
 }
 ```
+
+- pnpm 10 이상에서 의존성 상태 검사 때문에 스크립트 실행이 막히면 `node_modules/.bin/playwright ...`로 직접 실행한다.
 
 - `screen-spec:only <파일>`은 일부 시나리오만 다시 찍는다. 기존 결과를 지우지 않아서, 삭제·이름을 바꾼 캡처의 옛 결과가 남는다. 마무리는 항상 `screen-spec`(전체)로 한다.
 - 결과물: `docs/screen-spec/` (`index.html`, `shots/`, `data/`, `report.json`). gitignore에 넣는다.
 
 ## 구축 모드
 
-0. **사전 점검**
-   - 확인할 것:
-     - `@playwright/test`와 브라우저 설치 여부. Playwright는 `page.clock`을 쓰므로 1.45 이상이어야 한다.
-     - `zod` 설치 여부
-     - dev 서버 명령과 포트
-     - 라우터 종류와 라우트 정의 위치
-     - API 호출 계층(fetch·axios, 기본 경로)
-     - 인증 방식
-     - UI 라이브러리(다이얼로그 DOM)
-   - 없는 패키지는 설치 명령을 보여주고 승인을 받은 뒤 devDependency로 추가한다.
-   - API가 같은 출처의 접두사(`/api`)가 아니면 `apiPattern`을 실제 호출 URL에 맞춘다.
+0. **사전 점검** (결과는 `spec.config.ts`와 3단계에 반영한다)
+
+   | 확인할 것 | 반영 |
+   |---|---|
+   | `@playwright/test` 1.45 이상(`page.clock`), 브라우저 설치, `zod`(3·4 모두 됨) | 없으면 설치 명령을 보여주고 승인 후 devDependency로 추가 |
+   | dev 서버 명령·포트, **기동에 필요한 환경변수** (백엔드 프록시 주소 등) | `webServerCommand`. API는 모두 목이라 프록시 대상은 닿지 않는 더미 주소(`http://127.0.0.1:9`)로 둬도 된다 |
+   | 뷰포트: 기존 Playwright 설정·고정 해상도(키오스크, vh 레이아웃) | `viewport`. 기존 회귀 테스트 설정이 있으면 그 값을 따른다 |
+   | 차트·애니메이션 라이브러리(Chart.js, ECharts, framer-motion 등) | 있으면 `clockMode: 'flowing'` (없으면 'fixed') |
+   | API 호출 계층(fetch·axios)과 기본 경로 | `apiPattern`. 같은 출처 `/api`가 아니면 실제 URL에 맞춘다 |
+   | 인증 상태 저장 위치 | localStorage·쿠키 → storageState, **sessionStorage → `addInitScript`** (storageState에 안 담긴다) |
+   | UI 라이브러리의 다이얼로그 DOM, 여러 다이얼로그가 겹쳐 뜨는지 | `dialogSelector`. 겹쳐 뜨면 `captureDialog`에 항상 `hasText` |
+   | 기존 회귀 e2e 인프라(목데이터 빌더, 인증 주입) | 목데이터 빌더·타입은 가져다 쓴다. `test` 픽스처는 템플릿 것을 쓴다(섞으면 목 감시가 빠진다). 가져온 경로는 `state.json`의 `harnessDeps`에 적는다 |
+   | tsconfig가 `e2e/`를 포함하는지, 빌드가 tsc를 돌리는지 | 포함하면 7단계 `tsc --noEmit`이 필수 (깨지면 앱 빌드가 깨진다) |
+   | package.json·gitignore의 기존 `screen-spec` 항목 | 위 "모드 고르기"의 충돌 규칙 |
+
 1. **화면·상태 목록**
    - 라우트를 분석해 표로 만든다: 섹션 → 화면(라우트) → 찍을 상태(kind).
-   - kind 종류: `page`(기본 화면), `state`(로딩·빈 상태·오류·권한 등 같은 화면의 다른 상태), `dialog`, `alert`, `component`.
-   - 상태는 코드에 실제 분기가 있는 것만 넣는다: 조건부 렌더링, 오류 처리, 빈 배열 처리.
-   - **표를 사용자에게 보여주고 승인을 받는다.** 범위가 크면 섹션 단위로 나눠 진행한다.
+   - kind 기준 (`references/data-schema.md`):
+     - `page`: 화면의 기본 모습
+     - `state`: 같은 화면의 다른 모습 (로딩·빈 상태·오류·권한·변형)
+     - `dialog`: 입력이나 선택을 받는 창 (확인/취소, 폼, 인증)
+     - `alert`: 메시지만 알리는 창 (앱이 그린 안내창, 브라우저 기본 alert)
+     - `component`: 화면 일부만 확대 (툴팁, 범례, 카드)
+   - 상태는 코드에 실제 분기가 있는 것만 넣는다. **아래 변형 축을 하나씩 코드에서 찾아 빠짐없이 확인한다.**
+
+     | 변형 축 | 코드에서 찾을 곳 | 찍는 방법 |
+     |---|---|---|
+     | 역할·권한 | 역할별 메뉴, 라우트 가드, `role ===` 분기 | 화면이 달라지는 역할마다 1장 |
+     | 서버·환경·설정 종류 | 설정값·서버 유형별 분기, feature flag | **값마다 화면이 다르면 각각 1장** (합치지 않는다) |
+     | 선택·드릴다운 결과 | 선택 상자·탭·필터 onChange 뒤의 재조회 | 열린 목록 1장 + **선택한 뒤 결과 1장** |
+     | 데이터 양 | 0건, 1건, 많음(스크롤·페이지), 긴 문자열 | 0건은 필수, 나머지는 레이아웃이 달라질 때 |
+     | 진행 단계 | 로딩, 진행 중, 완료, 마감·잠김 | 단계마다 1장 |
+     | 실패 | API 오류, 검증 실패, 권한 없음 | 문구가 다르면 각각 1장 |
+     | 흐름 | 다이얼로그 연쇄 (요청 → 결과 → 다음 단계) | 단계마다 1장 |
+
+   - 같은 화면이 비슷해도 **보이는 요소가 달라지면 합치지 않는다** (예: 지역 선택기가 있는 유형과 없는 유형).
+   - **표를 사용자에게 보여주고 승인을 받는다.** 표에는 축별로 "찍음 / 해당 없음(이유)"을 남긴다. 범위가 크면 섹션 단위로 나눠 진행한다.
 2. **뼈대 설치**
    - `template/`을 복사하고 `spec.config.ts`를 채운다. `sections`는 1번 표의 섹션 순서대로 쓴다.
    - package.json 스크립트를 추가하고 `docs/screen-spec`을 gitignore에 넣는다.
@@ -93,7 +120,9 @@ package.json에 추가할 스크립트:
      - 목 누락 → 목을 추가한다.
      - 셀렉터 → 화면 코드를 다시 읽는다.
      - 콘솔 에러 → 원인을 확인한다. 정말 무관한 소음일 때만 이유를 적어 `consoleAllow`에 넣는다.
-   - 스샷을 직접 열어 의도한 상태가 찍혔는지 확인한다. 로딩 스피너만 찍혔거나 빈 화면이면 기다리는 조건을 고친다.
+   - **테스트 통과가 곧 정상은 아니다.** `pnpm screen-spec:sheet`로 모아 보기 이미지(`docs/screen-spec/review/sheet-*.png`)를 만들어 전부 눈으로 확인한다.
+     - 빈 차트, 로딩 스피너만 찍힘, 이전 캡처의 툴팁·다이얼로그가 남음 → 기다리는 조건이나 시계 방식을 고친다.
+     - 의심되는 장은 원본 `shots/<id>.png`를 열어 확인한다.
 5. **설명 작성**
    - 해당 컴포넌트 코드를 읽고 `references/writing-descriptions.md` 규칙으로 `title`과 `description`을 쓴다.
    - 코드에서 확인한 것만 쓴다. 추측은 쓰지 않는다.
@@ -104,8 +133,11 @@ package.json에 추가할 스크립트:
    - 사람이 검토를 마쳤다고 할 때만 `draft: false`로 바꾼다.
 7. **생성과 검토**
    - `pnpm screen-spec`을 실행하고 `report.json`의 실패·경고를 0으로 만든다.
+   - `tsc --noEmit`(프로젝트 tsconfig)을 실행해 하네스가 타입 오류를 만들지 않았는지 확인한다.
+   - 모아 보기 이미지를 다시 만들어 전체를 한 번 더 훑는다.
    - `docs/screen-spec/index.html`을 열어 사용자와 검토한다. 문구 수정 요청은 시나리오의 description을 고친다.
-   - 검토가 끝나면 `spec.config.ts`의 `lastBuiltCommit`을 현재 커밋으로 바꾸고, `e2e/screen-spec/`과 설정 변경을 커밋하자고 제안한다.
+   - 검토가 끝나면 커밋을 제안한다. 커밋한 뒤 그 해시를 `state.json`의 `lastBuiltCommit`에 써서 다음 커밋에 넣는다. `state.json` 변경은 영향 분석에서 제외되므로 이 후속 커밋이 다음 업데이트에 잡히지 않는다.
+   - `lastBuiltCommit`이 비어 있으면 `affected`가 `e2e/screen-spec/`을 처음 추가한 커밋을 기준으로 쓴다.
 
 ## 실행 모드
 
@@ -115,10 +147,10 @@ package.json에 추가할 스크립트:
 
 ## 업데이트 모드
 
-1. **변경 범위 찾기**: `pnpm screen-spec:affected`를 실행한다(기준: `lastBuiltCommit`, 인자로 다른 커밋을 넘길 수 있다).
+1. **변경 범위 찾기**: `pnpm screen-spec:affected`를 실행한다(기준: `state.json`의 `lastBuiltCommit`, 인자로 다른 커밋을 넘길 수 있다).
    - `affected`: 소스가 바뀐 캡처
    - `uncovered`: 어느 캡처의 source에도 없는 바뀐 파일. 새 화면이거나 source 누락일 수 있다.
-   - `harnessChanged`: 바뀐 fixtures·공통 목·설정. 이 파일을 쓰는 시나리오를 다시 돌린다.
+   - `harnessChanged`: 바뀐 fixtures·공통 목·Playwright 설정·`harnessDeps` 경로. 이 파일을 쓰는 시나리오를 다시 돌린다.
    - `failures`: 직전 실행에서 실패한 테스트
 2. **영향 표 작성**: 바뀐 코드를 읽고 캡처마다 하나로 분류해 사용자에게 보여준 뒤 승인을 받는다.
    - 다시 찍기만: 문구·스타일만 바뀜
@@ -130,7 +162,7 @@ package.json에 추가할 스크립트:
 3. **해당 부분만 수정**: 영향받은 시나리오·fixtures·설명만 고치고, 그 파일만 `screen-spec:only`로 먼저 확인한다.
 4. **전체 재생성**: `pnpm screen-spec`. 실패가 0이 될 때까지 3번을 반복한다.
 5. **기록 갱신**
-   - `lastBuiltCommit`을 갱신한다.
+   - 커밋한 뒤 `state.json`의 `lastBuiltCommit`을 그 해시로 갱신한다.
    - 설명이 바뀌었거나 새로 생긴 캡처의 요구사항 연결은 다시 검토 대상으로 표시하고, `draft: true`로 돌린다.
    - 바뀐 캡처 목록을 요약한다.
 
@@ -146,7 +178,7 @@ package.json에 추가할 스크립트:
 - 레포 밖에 두는 이유:
   - 고객 요구사항 원문을 레포에 커밋하지 않는다.
   - 다시 캡처해도 사람이 고친 내용이 지워지지 않는다.
-- 파일이 없으면 경고만 하고 넘어간다. 형식이 틀리면 파일 이름과 위치를 담아 생성을 중단한다.
+- 파일이 없으면 조용히 넘어간다(요구사항 기능을 안 쓰는 프로젝트는 아무것도 만들 필요 없다). 형식이 틀리면 파일 이름과 위치를 담아 생성을 중단한다.
 
 ## 하지 말 것
 

@@ -125,7 +125,6 @@ function collectWarnings(sources: Sources): readonly string[] {
     .filter((req, index, all) => all.findIndex((other) => other.id === req.id) !== index)
     .map((req) => `요구사항 id 중복: ${req.id}`)
   return [
-    ...sources.warnings,
     ...unknownSections,
     ...new Set(danglingCaptures),
     ...new Set(danglingReqs),

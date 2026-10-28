@@ -65,7 +65,10 @@ await dialog.getByRole('button', { name: '닫기' }).click()
 ```
 
 - 다이얼로그 DOM이 `role="dialog"`가 아니면 `spec.config.ts`의 `dialogSelector`를 바꾼다.
+- **여러 다이얼로그가 겹쳐 뜨는 앱**(공용 안내창·확인창·인증창이 따로 있는 경우)에서는 `hasText`를 항상 넘긴다. 빼면 마지막 다이얼로그를 잡아서 엉뚱한 창을 기다릴 수 있다.
+- 돌려받은 locator는 같은 창의 본문이 바뀌어도(입력 → 완료) 계속 쓸 수 있다.
 - 열리는 애니메이션은 `reducedMotion`과 `animations: 'disabled'`로 대부분 꺼진다.
+- kind: 입력·선택을 받는 창은 `dialog`, 메시지만 알리는 창(앱이 그린 안내창 포함)은 `alert`.
 
 ## 브라우저 기본 alert / confirm
 
@@ -85,7 +88,15 @@ await captureNativeDialog(page, testInfo, meta({ id: 'order-cancel-done', kind: 
 await page.getByRole('combobox', { name: '상태' }).click()
 await expect(page.getByRole('option', { name: '배송 중' })).toBeVisible()
 await captureScreen(/* kind: 'state' */)
+
+// 선택한 뒤의 결과 화면도 찍는다 (드릴다운). 재조회 응답을 등록하고 바뀐 화면을 기다린다.
+mockApi.register({ 'GET /api/orders': json({ items: SHIPPED_ORDERS }) })
+await page.getByRole('option', { name: '배송 중' }).click()
+await expect(page.getByRole('row')).toHaveCount(SHIPPED_ORDERS.length + 1)
+await captureScreen(/* kind: 'state', title: '주문 목록 (배송 중 필터)' */)
 ```
+
+- 캔버스 차트 툴팁은 마우스를 치워도 남는 경우가 많다. 툴팁 캡처는 테스트를 따로 둔다.
 
 ## 컴포넌트만 찍기
 
@@ -105,22 +116,51 @@ await page.route('**/orders/*/detail', (route) => route.abort('aborted'))
 
 ## 시간 · 주기 갱신
 
-- `spec.config.ts`의 `fixedTime`으로 `Date`가 고정된다. "오늘", "n분 전" 표시가 매번 같다.
-- 타이머(`setInterval` 폴링)는 그대로 돈다. 폴링 결과를 찍으려면 두 번째 응답을 등록하고 화면 변화를 기다린다.
-- 시간 흐름 자체를 제어해야 하면 해당 테스트에서 `page.clock.install()`과 `runFor()`를 쓴다.
+`spec.config.ts`의 `clockMode`가 시계를 정한다.
+
+| clockMode | 동작 | 맞는 경우 |
+|---|---|---|
+| `fixed` | `fixedTime`에서 시각이 멈춘다 | 날짜·시계 표시가 매번 같아야 하고 애니메이션이 없을 때 |
+| `flowing` | `fixedTime`에서 시작해 흐른다 | 차트·애니메이션이 있을 때 (초 단위 시계는 실행마다 조금 다름) |
+
+- `fixed`인 프로젝트에서 차트 화면만 흐르게 하려면 `page.goto` 전에 `await useFlowingClock(page)`를 호출한다 (`./support/test`).
+- 타이머(`setInterval` 폴링)는 두 방식 모두 돈다. 폴링 결과를 찍으려면 두 번째 응답을 등록하고 화면 변화를 기다린다.
+- 폴링이 차트를 다시 그리면, 다음 주기 전에 캡처가 끝나야 애니메이션 중간이 찍히지 않는다. 주기가 짧으면 해당 테스트에서 폴링 응답을 gate로 붙잡는다.
 
 ## 차트 · 캔버스
 
-조건으로 기다릴 수 없으면 짧게 고정 대기를 쓰고 이유를 적는다.
+- **`fixed` 시계에서는 Chart.js 같은 라이브러리가 0에서 멈춰 빈 차트가 찍힌다.** 테스트는 통과하므로 모아 보기 이미지로 꼭 확인한다. 위 표대로 `flowing`을 쓴다.
+- 시계가 흐르면 애니메이션이 끝날 때까지만 기다린다. 조건으로 기다릴 수 없으면 짧은 고정 대기를 쓰고 이유를 적는다.
 
 ```ts
-// 차트 진입 애니메이션(약 600ms)이 끝나야 막대 높이가 확정된다
-await page.waitForTimeout(800)
+await useFlowingClock(page) // clockMode가 'fixed'일 때만 필요
+await page.goto('/stats')
+// 차트 진입 애니메이션(기본 1초)이 끝나야 막대 높이가 확정된다
+await page.waitForTimeout(1200)
 ```
+
+## 인증 우회
+
+| 인증 상태 저장 위치 | 방법 |
+|---|---|
+| 쿠키, localStorage | setup 프로젝트에서 로그인 후 `storageState` 저장, 설정의 `use.storageState`로 지정 |
+| sessionStorage | `storageState`에 담기지 않는다. `page.addInitScript`로 페이지 로드 전에 심는다 |
+| 서버 세션만 | 로그인 API·사용자 정보 API를 목으로 응답 |
+
+```ts
+// fixtures/common.ts
+export async function signIn(page: Page, role: string): Promise<void> {
+  await page.addInitScript((value) => {
+    sessionStorage.setItem('auth', value)
+  }, JSON.stringify({ state: { signedIn: true, role } }))
+}
+```
+
+- 역할마다 화면이 다르면 역할을 인자로 받아 테스트마다 다르게 심는다.
 
 ## 권한별 화면
 
-역할마다 메뉴가 다르면 사용자 정보 API 응답을 바꿔 등록하고, 역할을 title에 쓴다: `주문 목록 (조회 전용 권한)`.
+역할마다 메뉴가 다르면 인증 정보나 사용자 정보 API 응답을 바꿔 등록하고, 역할을 title에 쓴다: `주문 목록 (조회 전용 권한)`.
 
 ## 기다리는 조건 고르기
 
