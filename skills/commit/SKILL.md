@@ -26,6 +26,10 @@ description: Use when creating git commits with multiple changes, to structure m
 2. **공백줄** (두 번째 줄): 제목과 상세내용 분리
 3. **상세내용** (3-5줄): `- ` 로 시작하는 bullet points, 수정사항별 1줄씩
 
+**`Co-Authored-By:` 줄은 제거합니다.**
+
+**관련 이슈가 있으면 제목 끝에 이슈 번호나 코드를 붙입니다.** (예: `fix: 로그인 오류 수정 (#123)`, `feat: 역할 요청 기능 추가 (PROJ-45)`)
+
 ## 제목 작성법
 
 **형식:** `<타입>: <한글 요약>`
