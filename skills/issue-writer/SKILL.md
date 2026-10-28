@@ -1,6 +1,6 @@
 ---
 name: issue-writer
-description: Use when the user asks to write a new GitHub issue or Jira ticket for developer work ("이슈 만들어줘", "이슈 작성", "티켓 생성") or to 정리/정돈 an existing one ("이슈 정리", "#N 정리", "티켓 정리", "개발자가 보기 쉽게 바꿔줘"). Writes or rewrites the body to the standard issue form (what to do at a glance, why, done criteria, can-start-now) without inventing requirements or losing the rationale.
+description: Use when the user asks to write a new GitHub issue or Jira ticket for developer work ("이슈 만들어줘", "이슈 작성", "티켓 생성"), to modify or update an existing one with new information ("이슈 수정", "이슈 업데이트", "#N 수정", "#N에 반영해줘", "티켓 업데이트", "블로커 해결됐어"), or to 정리/정돈 one ("이슈 정리", "#N 정리", "티켓 정리", "개발자가 보기 쉽게 바꿔줘"). Writes, updates, or rewrites the body to the standard issue form (what to do at a glance, why, done criteria, can-start-now) without inventing requirements or losing the rationale.
 ---
 
 # 이슈 작성
@@ -9,7 +9,10 @@ description: Use when the user asks to write a new GitHub issue or Jira ticket f
 
 개발자가 이슈를 **딱 보면 무엇을 해야 하는지** 알고, **왜 해야 하는지** 확인할 수 있게 본문을 표준 이슈 폼에 맞게 쓴다.
 - **새로 작성**: 사용자가 준 내용으로 새 이슈를 만든다.
-- **기존 정리**: 이미 있는 이슈 본문을 폼에 맞게 다시 쓴다.
+- **수정·업데이트**: 기존 이슈에 바뀐 내용(요구 변경, 블로커 해결, 범위 조정 등)만 반영한다. 나머지는 그대로 둔다.
+- **기존 정리**: 이미 있는 이슈 본문 전체를 폼에 맞게 다시 쓴다.
+
+요청이 "수정/업데이트/반영"이면 수정 절차를, "정리/정돈/보기 쉽게"면 정리 절차를 쓴다. 애매하면 어느 쪽인지 묻는다.
 
 결과물은 이슈 본문이다 (판정 보고서나 댓글이 아니다).
 
@@ -48,6 +51,19 @@ description: Use when the user asks to write a new GitHub issue or Jira ticket f
 5. **사용자 확인**: 제목·본문 초안을 **먼저 보여준다.**
 6. **승인 후 생성**: 사용자가 확인하면 `gh issue create --title "<제목>" --body-file <파일>`(Jira는 Atlassian MCP `createJiraIssue`)로 만들고 링크를 알려준다. 라벨·담당자·마일스톤은 사용자가 지정한 것만 붙인다.
 
+## 절차 — 수정·업데이트
+
+1. **원문 조회**: 정리 절차 1번과 같이 본문·댓글·연결 이슈를 조회한다.
+2. **변경 내용 확인**: 사용자가 준 변경 사항이 폼의 어느 항목(요구사항, 할 일, 완료 조건, 블로커, 범위 밖 등)에 해당하는지 정한다. 근거나 대상이 불분명하면 묻는다.
+3. **연쇄 영향 반영**: 한 항목을 바꾸면 함께 맞춰야 하는 항목도 고친다.
+   - 요구사항이 바뀌면 할 일·완료 조건도 맞춘다.
+   - 블로커가 해결되면 `- [x]`로 바꿔 뒤로 옮기고, 1번 착수 상태를 다시 판정한다.
+   - 범위에서 빠진 것은 지우지 않고 7번 범위 밖으로 옮긴다.
+   - 요구 출처가 새로 생기면 2번·9번·10번에 반영한다.
+4. **나머지 보존**: 변경과 관계없는 문장·서식은 고치지 않는다. 폼이 크게 어긋나 있으면 수정만 하고, 전체 정리가 필요한지 따로 제안한다.
+5. **변경안 확인**: 바뀌는 부분만 `이전 → 이후`로 **사용자에게 먼저 보여준다.**
+6. **승인 후 반영**: 원본 본문을 스크래치패드에 백업하고 `gh issue edit <N> --body-file`(Jira는 Atlassian MCP `editJiraIssue`)로 반영한다. 제목도 바뀌어야 하면 함께 제안한다. 반영 사실은 사용자가 요청할 때만 댓글로 남긴다.
+
 ## 절차 — 기존 정리
 
 1. **원문 조회**
@@ -69,7 +85,7 @@ description: Use when the user asks to write a new GitHub issue or Jira ticket f
      - 정보가 여러 섹션에 중복되거나 서로 모순되지 않는가
 4. **누락 처리**: 원문에서 도출할 수 없는 항목(특히 완료 조건·범위 밖)은 **임의로 만들지 않는다.** 근거가 있는 초안만 쓰고, 근거가 없으면 `(미정 — 확인 필요)`로 두고 사용자에게 질문 목록으로 넘긴다.
 5. **정리안 작성**: 폼에 맞춰 새 본문을 쓰고 **사용자에게 먼저 보여준다.**
-6. **승인 후 반영**: 사용자가 확인하면 `gh issue edit <N> --body-file`로 본문을 교체한다. 반영 전에 원본 본문을 스크래치패드에 백업하고 경로를 알려준다.
+6. **승인 후 반영**: 사용자가 확인하면 `gh issue edit <N> --body-file`(Jira는 Atlassian MCP `editJiraIssue`)로 본문을 교체한다. 반영 전에 원본 본문을 스크래치패드에 백업하고 경로를 알려준다.
 
 ## 판정 기준 (1번 착수 상태)
 
