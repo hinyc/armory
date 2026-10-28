@@ -1,0 +1,9 @@
+{
+  "draft": true,
+  "links": {
+    "orders-list": [{ "req": "REQ-1.1", "rationale": "최신순 주문 목록을 보여주는 화면" }],
+    "orders-empty": [{ "req": "REQ-1.1", "rationale": "조회 결과가 0건일 때의 상태" }],
+    "orders-cancel-confirm": [{ "req": "REQ-1.2", "rationale": "취소 확인 절차" }],
+    "orders-cancel-done": [{ "req": "REQ-1.2", "rationale": "취소 완료 결과 안내" }]
+  }
+}

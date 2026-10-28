@@ -1,0 +1,3 @@
+{
+  "orders-error": { "description": "주문 조회 API가 실패하면 목록 대신 오류 안내와 다시 시도 버튼이 보인다." }
+}
