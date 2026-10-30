@@ -106,6 +106,19 @@ await captureScreen(page, testInfo, meta({ id: 'order-status-badge', kind: 'comp
 })
 ```
 
+## 영역에 박스 · 번호 표시
+
+`captureScreen`의 `marks`에 표시할 요소를 넘긴다. 좌표는 캡처할 때 잰다. 자세한 내용은 `annotations.md`.
+
+```ts
+await captureScreen(page, testInfo, meta({ id: 'home-layout', kind: 'page', title: '홈' }), {
+  marks: [
+    { target: page.getByRole('banner'), num: 1 },
+    { target: page.getByRole('main'), num: 2 },
+  ],
+})
+```
+
 ## 화면 이동 막기
 
 버튼을 눌렀을 때 다음 화면으로 넘어가면 배경이 바뀐다. 이동 요청을 막아 현재 화면을 유지한다.

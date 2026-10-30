@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import type { FullResult, Reporter, TestCase, TestResult } from '@playwright/test/reporter'
+import { renderAnnotations } from './annotate'
 import { buildModel } from './model'
 import { renderPage } from './render/page'
 import { loadSources } from './sources'
@@ -55,7 +56,15 @@ export default class ScreenSpecReporter implements Reporter {
 
   async onEnd(result: FullResult): Promise<{ status: FullResult['status'] } | undefined> {
     try {
-      const model = buildModel(await loadSources())
+      const sources = await loadSources()
+      // 표시(박스·번호)가 있는 캡처는 그린 이미지로 바꿔 문서에 넣는다
+      const annotations = await renderAnnotations(sources.entries)
+      const entries = sources.entries.map((entry) => {
+        const image = annotations.images.get(entry.id)
+        return image ? { ...entry, image } : entry
+      })
+      const built = buildModel({ ...sources, entries })
+      const model = { ...built, warnings: [...built.warnings, ...annotations.warnings] }
       // HTML만 다시 만들 때는 직전 캡처 실행의 결과(status·failures)를 그대로 둔다
       const previous = this.options.htmlOnly ? await previousRun() : undefined
       const failures = previous ? previous.failures : this.failures

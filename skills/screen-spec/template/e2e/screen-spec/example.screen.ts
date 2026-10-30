@@ -56,6 +56,13 @@ test('주문 목록 기본·로딩·빈 상태', async ({ page, mockApi }, testI
       description:
         '사이드 메뉴 "주문"을 누르면 열린다. 최근 주문이 최신순으로 보인다.\n\n상태 색: 초록=결제 완료, 파랑=배송 중, 회색=취소. 행을 누르면 [[orders-cancel-confirm|취소 확인]] 흐름으로 이어진다.',
     }),
+    // 스샷에 박스·번호를 그린다. 좌표는 캡처할 때 잰다 (references/annotations.md)
+    {
+      marks: [
+        { target: page.getByRole('table'), num: 1 },
+        { target: page.getByRole('button', { name: '취소' }).first(), num: 2, badge: 'right' },
+      ],
+    },
   )
 })
 

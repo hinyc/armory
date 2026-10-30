@@ -7,6 +7,7 @@
  *   affected        캡처별 바뀐 소스·시나리오
  *   uncovered       어느 캡처의 source에도 없는 바뀐 앱 소스 (새 화면 또는 source 누락)
  *   harnessChanged  바뀐 fixtures·공통 목·Playwright 설정·harnessDeps 경로
+ *   annotationsToCheck  영향받은 캡처를 쓰는 annotations/*.json (좌표를 직접 적어서 화면이 바뀌면 어긋날 수 있다)
  *   failures        직전 실행에서 실패한 테스트
  */
 import { execFileSync } from 'node:child_process'
@@ -16,6 +17,7 @@ import path from 'node:path'
 const OUT_DIR = process.env.SCREEN_SPEC_OUT_DIR ?? 'docs/screen-spec'
 const HARNESS_DIR = 'e2e/screen-spec/'
 const STATE_FILE = `${HARNESS_DIR}state.json`
+const ANNOTATIONS_DIR = `${HARNESS_DIR}annotations/`
 const HARNESS_CONFIGS = /^playwright\.screen-spec.*\.config\.[cm]?[jt]s$/
 const SOURCE_EXT = /\.(tsx?|jsx?|vue|svelte|css|scss)$/
 
@@ -79,6 +81,8 @@ function loadEntries() {
 }
 
 function isHarness(file, deps) {
+  // annotations/는 실행할 때마다 다시 그려져서 하네스 변경으로 보지 않는다
+  if (file.startsWith(ANNOTATIONS_DIR)) return false
   return (
     file.startsWith(HARNESS_DIR) ||
     HARNESS_CONFIGS.test(file) ||
@@ -104,13 +108,29 @@ function classify(changed, entries, deps) {
   return { affected, uncovered, harnessChanged }
 }
 
+function annotationsToCheck(affectedIds) {
+  if (!fs.existsSync(ANNOTATIONS_DIR)) return []
+  return fs
+    .readdirSync(ANNOTATIONS_DIR)
+    .filter((name) => name.endsWith('.json'))
+    .flatMap((name) => {
+      const file = `${ANNOTATIONS_DIR}${name}`
+      const specs = [readJson(file, [])].flat()
+      return specs
+        .filter((spec) => affectedIds.has(spec?.capture) && (spec.marks?.length || spec.arrows?.length || spec.crop))
+        .map((spec) => ({ file, name: spec.name, capture: spec.capture }))
+    })
+}
+
 function main() {
   const state = readState()
   const base = resolveBase(state)
   const changed = changedFiles(base)
   const entries = loadEntries()
   const failures = readJson(path.join(OUT_DIR, 'report.json'), {}).failures ?? []
-  const result = { base, changedCount: changed.length, ...classify(changed, entries, state.harnessDeps), failures }
+  const classified = classify(changed, entries, state.harnessDeps)
+  const toCheck = annotationsToCheck(new Set(classified.affected.map((entry) => entry.id)))
+  const result = { base, changedCount: changed.length, ...classified, annotationsToCheck: toCheck, failures }
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
 }
 

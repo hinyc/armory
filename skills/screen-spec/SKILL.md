@@ -1,6 +1,6 @@
 ---
 name: screen-spec
-description: Use when the user wants a screen design document (화면설계서, 화면명세서, screen spec, UI spec) generated from a running web app, or wants an existing one re-run or updated after code changes ("화면설계서 만들어줘", "화면설계서 다시 뽑아줘", "화면설계서 업데이트", "바뀐 화면 반영해줘"). Builds Playwright capture scripts with mocked APIs once, commits them, and re-runs them to produce an HTML document with real screenshots, code-based descriptions, and optional requirement traceability.
+description: Use when the user wants a screen design document (화면설계서, 화면명세서, screen spec, UI spec) generated from a running web app, or wants an existing one re-run or updated after code changes ("화면설계서 만들어줘", "화면설계서 다시 뽑아줘", "화면설계서 업데이트", "바뀐 화면 반영해줘"), or wants numbered boxes or arrows drawn on its screenshots ("캡처에 번호 표시", "영역 박스 쳐줘", "매뉴얼용 이미지"). Builds Playwright capture scripts with mocked APIs once, commits them, and re-runs them to produce an HTML document with real screenshots, code-based descriptions, and optional requirement traceability.
 ---
 
 # 화면설계서 (screen-spec)
@@ -44,6 +44,7 @@ description: Use when the user wants a screen design document (화면설계서, 
 | `e2e/screen-spec/state.json` | 업데이트 기준 커밋(`lastBuiltCommit`), 하네스 밖 의존 경로(`harnessDeps`) | 에이전트가 갱신 |
 | `e2e/screen-spec/affected.mjs` | 업데이트 모드: 바뀐 파일 → 영향받는 캡처 | 안 함 |
 | `e2e/screen-spec/contact-sheet.mjs` | 스샷 검토용 모아 보기 이미지 생성 | 안 함 |
+| `e2e/screen-spec/annotations/*.json` | 좌표를 직접 적는 박스·번호·화살표·잘라내기 (템플릿에는 없음) | 필요할 때 만듦 |
 | `e2e/screen-spec/example.screen.ts` | 시나리오 예시 | 참고 후 삭제 |
 | `external.example/` | 외부 데이터 예시 | 외부 폴더로 복사해 씀 |
 
@@ -62,7 +63,7 @@ package.json에 추가할 스크립트:
 - pnpm 10 이상에서 의존성 상태 검사 때문에 스크립트 실행이 막히면 `node_modules/.bin/playwright ...`로 직접 실행한다.
 
 - `screen-spec:only <파일>`은 일부 시나리오만 다시 찍는다. 기존 결과를 지우지 않아서, 삭제·이름을 바꾼 캡처의 옛 결과가 남는다. 마무리는 항상 `screen-spec`(전체)로 한다.
-- 결과물: `docs/screen-spec/` (`index.html`, `shots/`, `data/`, `report.json`). gitignore에 넣는다.
+- 결과물: `docs/screen-spec/` (`index.html`, `shots/`, `data/`, `annotated/`, `report.json`). gitignore에 넣는다.
 
 ## 구축 모드
 
@@ -129,6 +130,8 @@ package.json에 추가할 스크립트:
    - 해당 컴포넌트 코드를 읽고 `references/writing-descriptions.md` 규칙으로 `title`과 `description`을 쓴다.
    - 코드에서 확인한 것만 쓴다. 추측은 쓰지 않는다.
    - `source`에는 이 캡처를 그리는 파일을 모두 적는다. 업데이트 모드가 이 값으로 영향 범위를 찾는다.
+   - 영역이 많은 화면(레이아웃 소개)은 스샷에 박스·번호를 그리고 설명에서 ①②로 가리킨다. 요소를 지정하면 캡처할 때 좌표를 잰다. 방법과 규칙은 `references/annotations.md`.
+   - 사용자가 매뉴얼·보고서용으로 잘라낸 번호 이미지를 원하면 `annotations/*.json`으로 만든다. 결과 PNG는 직접 열어 위치를 확인한다.
 6. **(선택) 요구사항 연결**
    - 사용자가 요구사항 문서를 주면 `requirements.json`으로 변환한다. 형식이 문서마다 달라서 변환 스크립트는 그때 작성하고, 외부 폴더에 둔다.
    - `references/requirements-mapping.md` 기준으로 `mapping.json` 초안을 쓴다. 모든 연결에 근거(rationale)를 쓰고 `draft: true`로 둔다.
@@ -155,6 +158,7 @@ package.json에 추가할 스크립트:
    - `uncovered`: 어느 캡처의 source에도 없는 바뀐 파일. 새 화면이거나 source 누락일 수 있다.
    - `harnessChanged`: 바뀐 fixtures·공통 목·Playwright 설정·`harnessDeps` 경로. 이 파일을 쓰는 시나리오를 다시 돌린다.
    - `failures`: 직전 실행에서 실패한 테스트
+   - `annotationsToCheck`: 영향받은 캡처에 좌표를 직접 적은 표시 파일. 재생성 뒤 `annotated/` 이미지를 열어 어긋났으면 좌표를 고친다.
 2. **영향 표 작성**: 바뀐 코드를 읽고 캡처마다 하나로 분류해 사용자에게 보여준 뒤 승인을 받는다.
    - 다시 찍기만: 문구·스타일만 바뀜
    - 시나리오 수정: 셀렉터·흐름이 바뀜

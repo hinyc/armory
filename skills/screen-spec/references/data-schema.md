@@ -19,6 +19,11 @@
 | `sortKey` | `시나리오파일:줄:순번`. 병렬 실행해도 문서 순서가 소스 순서를 따른다 |
 | `specFile` | 시나리오 파일 |
 | `nativeDialog` | `{ type, message }`. 브라우저 기본 알림창을 문서에서 덮어 그릴 때 쓴다 |
+| `marks` | `[{ box: [x, y, 너비, 높이], num?, badge?, color? }]`. `captureScreen`의 `marks` 옵션으로 잰 표시. 있으면 문서에 `annotated/<id>.png`가 들어간다 |
+
+## 표시 파일: `e2e/screen-spec/annotations/*.json` (선택, 레포에 커밋)
+
+좌표를 직접 적는 박스·번호·화살표·잘라내기. 필드와 예시는 `references/annotations.md`.
 
 ## 외부 데이터 (기본 `~/Documents/<프로젝트>-screen-spec/`)
 
@@ -64,6 +69,7 @@
 | JSON 문법 오류, 스키마 오류 | 파일 경로와 위치를 출력하고 생성 중단 (종료 코드 1) |
 | 없는 캡처·요구사항·부모를 가리킴 | 경고 (`report.json`의 `warnings`) |
 | `sections`에 없는 section | 경고, 목차 맨 뒤로 |
+| 표시 파일이 없는 캡처를 가리킴, crop·박스가 스샷 밖, name 중복 | 경고 |
 
 ## `report.json`
 
