@@ -55,6 +55,8 @@ function badgeAt(mark: Mark, size: number): readonly [number, number] {
 function markHtml(mark: Mark, canvas: { readonly width: number; readonly height: number }): string {
   const color = escapeHtml(mark.color ?? STYLE.color)
   const [x, y, w, h] = mark.box
+  // 잘라낸 영역과 겹치지 않는 표시는 그리지 않는다. 배지만 가장자리로 밀려 들어오는 것을 막는다.
+  if (x + w <= 0 || y + h <= 0 || x >= canvas.width || y >= canvas.height) return ''
   const box = `<div class="box" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px;border-color:${color}"></div>`
   if (mark.num === undefined || mark.badge === 'none') return box
   const [bx, by] = badgeAt(mark, STYLE.badge)
@@ -107,7 +109,7 @@ function outsideWarnings(job: Job, size: { readonly width: number; readonly heig
   const cropOk = cx >= 0 && cy >= 0 && cx + cw <= size.width && cy + ch <= size.height
   return [
     ...(cropOk ? [] : [`표시 ${job.name}: crop이 스샷(${size.width}x${size.height}) 밖으로 나감`]),
-    ...job.marks.filter((mark) => !inside(mark.box)).map((mark) => `표시 ${job.name}: ${mark.num ?? '박스'}가 이미지 밖으로 나감`),
+    ...job.marks.filter((mark) => !inside(mark.box)).map((mark) => `표시 ${job.name}: ${mark.num === undefined ? '번호 없는 박스' : `${mark.num}번 표시`}가 이미지 밖으로 나감 (밖에 있는 부분은 안 그림)`),
   ]
 }
 
