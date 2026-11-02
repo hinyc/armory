@@ -14,7 +14,7 @@ import { annotationSpecSchema, type AnnotationSpec, type Arrow, type CaptureEntr
 
 export const ANNOTATIONS_DIR = path.resolve('e2e/screen-spec/annotations')
 const OUT_SUBDIR = 'annotated'
-const STYLE = { color: '#e5262b', stroke: 3, badge: 28 } as const
+const STYLE = { color: '#e5262b', stroke: 2, badge: 28 } as const
 
 type Rect = readonly [number, number, number, number]
 
