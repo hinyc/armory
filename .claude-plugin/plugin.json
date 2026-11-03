@@ -1,7 +1,15 @@
 {
   "name": "armory",
-  "description": "개인 업무용 스킬 모음: 커밋 정리, 이슈 작성, 진행 대시보드, 화면설계서",
+  "description": "개인 업무용 스킬 모음: 커밋 정리, 이슈 작성, 진행 대시보드, 화면설계서, 입력창 위 질문 요약 띠",
   "version": "0.1.0",
-  "author": { "name": "inyeol Hong", "email": "dlsduf@gmail.com" },
-  "keywords": ["personal", "workflow", "skills"]
+  "author": {
+    "name": "inyeol Hong",
+    "email": "dlsduf@gmail.com"
+  },
+  "keywords": [
+    "personal",
+    "workflow",
+    "skills"
+  ],
+  "types": "./types/index.d.ts"
 }
