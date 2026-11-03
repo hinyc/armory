@@ -1,0 +1,12 @@
+{
+  "enabled": true,
+  "maxAttempts": 3,
+  "suggestRoles": true,
+  "roles": {
+    "manager": true,
+    "skill-author": true,
+    "template-dev": true,
+    "mod-dev": true,
+    "release": true
+  }
+}
