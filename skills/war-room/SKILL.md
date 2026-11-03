@@ -72,7 +72,10 @@ war-room/
 1. 프로젝트 루트를 확인한다 (`git rev-parse --show-toplevel`, 없으면 현재 폴더).
 2. 이 스킬의 `template/`을 `<루트>/war-room/`으로 복사한다. 이미 있는 파일은 덮어쓰지 않는다.
    - `config.json`, `roles/manager.md`, `STATUS.md`, `DECISIONS.md`, `LESSONS.md`, `archive/.gitkeep`
-3. 프로젝트를 훑어보고(폴더 구조, package.json·빌드 설정, README) 롤 후보 2~4개를 제안한다. 롤마다 이름, 맡을 일 한 줄, 담당 경로를 적는다.
+3. 롤 후보 2~4개를 제안한다 (`references/role-discovery.md`).
+   - 이 프로젝트의 이전 세션·메모리·CLAUDE.md·git 이력이 있으면 수집 sonnet → 제안 opus 서브에이전트 순서로 읽기 전용으로 반복된 일의 사실을 모아 후보를 만든다. 메인 세션은 jsonl을 직접 읽지 않는다.
+   - 롤마다 이름, 맡을 일 한 줄, 담당 경로, 근거(출처와 횟수)를 보여준다. 원문·비밀값은 옮기지 않는다.
+   - 이전 기록이 없으면 "이전 기록 없음, 구조만 보고 제안"이라 밝히고 수집은 건너뛴 채 opus가 폴더 구조·빌드 설정·README만 본다.
 4. 사용자가 고른 롤만 만든다. 고르지 않으면 `manager`만 둔다.
 5. `roles/manager.md`의 "프로젝트별 규칙"에 넣을 것(테스트 명령, 커밋 규칙)이 있는지 묻는다.
 
