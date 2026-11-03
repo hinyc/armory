@@ -1,0 +1,8 @@
+{
+  "enabled": true,
+  "maxAttempts": 3,
+  "suggestRoles": true,
+  "roles": {
+    "manager": true
+  }
+}

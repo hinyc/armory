@@ -10,6 +10,7 @@
 | 스킬 | `issue-writer` | GitHub 이슈·Jira 티켓을 표준 양식으로 작성·수정·정리 |
 | 스킬 | `status-dashboard` | AI가 관리하는 JSON + HTML 진행 대시보드 |
 | 스킬 | `screen-spec` | 실제 화면 캡처 + 목 API + 코드 기반 설명으로 화면설계서 생성·업데이트 (Playwright) |
+| 스킬 | `war-room` | 프로젝트 루트 `war-room/`에 롤을 정의하고, 일을 담당 롤 에이전트에 배정하고 요구 수준까지 검증·반복, 현재 상황·결정·교훈 문서 관리 (롤별 on/off) |
 | 스킬 + mod | `question-band` | 입력창 위에 현재 질문 요약(최대 4줄)과 질문 시각·경과/소요 시간 표시. `/question-band`로 켜짐/꺼짐 전환 |
 
 ## question-band (입력창 위 질문 띠)
