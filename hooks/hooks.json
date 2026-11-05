@@ -1,1 +1,1 @@
-{ "modules": ["./question-band/register.tsx"] }
+{ "modules": ["./register.ts"] }
