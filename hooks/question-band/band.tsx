@@ -28,6 +28,8 @@ export function statusLine(question: Question, now: number, offsetMinutes: numbe
 /** 다른 mod가 띠에 아무것도 그리지 않았는지. */
 export function isBlank(tree: RenderElement | null | undefined): boolean {
   if (tree === null || tree === undefined) return true
+  // 엔진 기본 그림({ type: 'engine' })은 core가 직접 그린 것 = 다른 mod가 안 그린 것.
+  if (tree.type === 'engine') return true
   if (tree.type !== 'Box' && tree.type !== 'Text') return false
   // 엘리먼트는 children을 자기 자신에 둔다 ({ type, children, props? }).
   const node = tree as { children?: unknown; props?: { children?: unknown } }

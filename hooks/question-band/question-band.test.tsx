@@ -30,8 +30,15 @@ const LONG_PROMPT = [
 ].join('\n')
 
 /** 엔진 대신 아래에서 답하는 훅: 아무것도 그리지 않는 띠, 프롬프트·턴 통과, 모델 요약. */
-function engineBeneath(on: On, modelText = '로그인 엔터 제출 추가\n실패 시 잠금 기능', otherBand?: string) {
+function engineBeneath(
+  on: On,
+  modelText = '로그인 엔터 제출 추가\n실패 시 잠금 기능',
+  otherBand?: string,
+  drawsEngineDefault = false,
+) {
   on('ui.render', ($, e) => {
+    // 실제 Claude Code는 아무 mod도 안 그리면 엔진 기본 그림 요소를 돌려준다.
+    if (drawsEngineDefault) return { type: 'engine', ref: 1 } as const
     const { Box, Text } = $.ui.resolve(e)
     return otherBand === undefined ? <Box /> : <Text>{otherBand}</Text>
   })
@@ -162,6 +169,17 @@ test('다른 mod가 띠를 그리고 있으면 양보한다', async ($, on) => {
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
   expect(await ui.find({ type: 'Text', text: /다른 mod/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /경과/ })).toBeUndefined()
+  await ui.unmount()
+})
+
+test('엔진 기본 그림만 있으면 띠를 그린다', async ($, on) => {
+  mock.clock(on)
+  engineBeneath(on, undefined, undefined, true)
+
+  await $.prompt.submit(typed('질문'))
+
+  const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  expect(await ui.find({ type: 'Text', text: /경과/ })).toBeDefined()
   await ui.unmount()
 })
 
