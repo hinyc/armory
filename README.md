@@ -15,7 +15,7 @@
 | [`issue-writer`](#issue-writer) | skill | GitHub 이슈·Jira 티켓을 표준 양식으로 작성·수정·정리 | "이슈 만들어줘", "#12 정리" |
 | [`status-dashboard`](#status-dashboard) | skill | AI가 JSON을 관리하고 사람은 HTML로 보는 진행 대시보드 | "진행상황 대시보드" |
 | [`screen-spec`](#screen-spec) | skill | 실제 화면 캡처 + 목 API + 코드 기반 설명으로 화면설계서 생성·갱신 | "화면설계서 만들어줘" |
-| [`war-room`](#war-room) | skill | 롤 에이전트에 일을 배정하고 요구 수준까지 검증·반복 | "롤 추가", `war-room/`이 있는 프로젝트의 모든 작업 |
+| [`war-room`](#war-room) | skill + mod | 롤 에이전트에 일을 배정하고 요구 수준까지 검증·반복 | "롤 추가", `war-room/`이 있는 프로젝트의 모든 작업 |
 | [`question-band`](#question-band) | mod + skill | 입력창 위에 현재 질문 요약과 경과 시간 표시 | `/question-band` (전환) |
 
 스킬은 설명(description)에 맞는 요청이 오면 자동으로 쓰인다. 직접 부르려면 `/armory:<이름>`.
@@ -99,6 +99,7 @@ war-room/
                                             └── 원인별 재배정 ──────┘
 ```
 
+- `war-room-guard` mod가 `war-room/`이 켜진 프로젝트의 시스템 프롬프트에 "먼저 담당 롤을 찾는다" 지침을 넣는다. config의 `enabled: false`면 빠진다.
 - 검증은 구현한 에이전트가 아닌 별도 에이전트가 기준별로 판정한다.
 - 시도 상한에 닿았거나, 나아지지 않거나, 한계에 부딪히면 멈춘다. 멈출 때는 최고 결과와 함께 대안을 2개 이상 보고한다.
 - 사용자가 "될 때까지"처럼 지시하면 상한을 무시하고 접근을 바꿔 가며 계속 반복한다.
@@ -134,8 +135,10 @@ skills/<name>/
 ├─ references/          # 필요할 때만 읽는 상세 문서
 └─ template/            # 대상 프로젝트에 복사되는 파일
 hooks/
-├─ hooks.json           # mod 모듈 등록
-└─ question-band/       # mod 구현 + 테스트
+├─ hooks.json           # 진입점 register.ts 하나를 가리킴
+├─ register.ts          # question-band와 war-room-guard를 함께 등록
+├─ question-band/       # mod 구현 + 테스트
+└─ war-room-guard/      # mod 구현 + 테스트
 types/index.d.ts        # mod 타입 선언
 ```
 
