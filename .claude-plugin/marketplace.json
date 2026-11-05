@@ -6,7 +6,7 @@
     {
       "name": "armory",
       "description": "개인 업무용 스킬 모음: 프로젝트 관리, 커밋 정리, 이슈 작성, 진행 대시보드, 화면설계서, 롤 에이전트 관리",
-      "version": "0.2.2",
+      "version": "0.3.0",
       "source": "./",
       "author": { "name": "inyeol Hong", "email": "dlsduf@gmail.com" }
     }
