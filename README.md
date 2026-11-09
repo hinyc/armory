@@ -81,26 +81,29 @@ Playwright로 실제 앱을 띄워 상태별 화면을 찍고, 코드를 읽어 
 war-room/
 ├─ config.json       # 전체·롤별 on/off, 시도 상한, 롤 제안 on/off
 ├─ roles/
-│  ├─ manager.md     # 기본 롤 (배정·검증·문서 정리)
+│  ├─ manager.md     # 기본 롤 (배정·검토·문서 정리)
+│  ├─ evaluator.md   # 기본 롤 (평가 계획·평가 실행, 끄기·삭제 가능)
 │  └─ <id>.md        # 프로젝트에 맞게 추가 (description, scope, model, skills, refs)
 ├─ STATUS.md         # 현재 상황 (덮어쓰기)
 ├─ DECISIONS.md      # 결정 로그 (쌓임)
 ├─ LESSONS.md        # 시행착오·롤 문서 개선 후보 (반영하면 비움)
-└─ archive/
+├─ archive/
+└─ .eval/            # 평가 진행 파일 (커밋 안 함)
 ```
 
 ```json
-{ "enabled": true, "maxAttempts": 3, "suggestRoles": true, "roles": { "manager": true } }
+{ "enabled": true, "maxAttempts": 3, "suggestRoles": true, "roles": { "manager": true, "evaluator": true } }
 ```
 
 ```
-요청 → 담당 롤 찾기 → 요구 기준 정하기 → 롤 에이전트 실행 → 검증 에이전트 판정
-                                            ↑                      │ 실패
-                                            └── 원인별 재배정 ──────┘
+요청 → 담당 롤 찾기 → 요구 기준 정하기 → 평가 계획 → 롤 에이전트 실행 → 평가 롤 판정
+                                                        ↑                      │ 실패
+                                                        └── 원인별 재배정 ──────┘
 ```
 
 - `war-room-guard` mod가 `war-room/`이 켜진 프로젝트의 시스템 프롬프트에 "먼저 담당 롤을 찾는다" 지침을 넣는다. config의 `enabled: false`면 빠진다.
-- 검증은 구현한 에이전트가 아닌 별도 에이전트가 기준별로 판정한다.
+- 판정은 구현한 에이전트가 아닌 별도 에이전트가 한다. 기본 `evaluator` 롤이 기준·히스토리(DECISIONS·LESSONS·git log)·부작용(전체 테스트)·개념(conceptpowers)·수치(3번 잰 중앙값, 한계값 초과 실패, 10% 넘게 나빠지면 알림) 다섯 갈래로 평가한다. 위반은 실패로 보고 다시 맡긴다.
+- 평가 진행은 `war-room/.eval/<롤 id>.json`에 쓴다. 평가 띠(mod)가 이전·지금 평가 상태를 입력창 위에 보여주고 평가가 끝나면 사라진다. `evaluator`를 끄거나 없는 기존 설치는 평가 롤 없이 검증 에이전트로 판정한다.
 - 시도 상한에 닿았거나, 나아지지 않거나, 한계에 부딪히면 멈춘다. 멈출 때는 최고 결과와 함께 대안을 2개 이상 보고한다.
 - 사용자가 "될 때까지"처럼 지시하면 상한을 무시하고 접근을 바꿔 가며 계속 반복한다.
 - 자주·길게·참고할 것이 많은 일은 새 롤·분리를, 롤에 같은 지시·맥락이 반복되면 그 롤 문서 갱신을 제안한다. 이 제안은 `suggestRoles: false`로 끈다.

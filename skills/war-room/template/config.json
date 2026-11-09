@@ -3,6 +3,7 @@
   "maxAttempts": 3,
   "suggestRoles": true,
   "roles": {
-    "manager": true
+    "manager": true,
+    "evaluator": true
   }
 }
