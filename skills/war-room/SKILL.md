@@ -1,6 +1,6 @@
 ---
 name: war-room
-description: Use BEFORE starting any task in a project that has a war-room/ folder at its root — check whether an enabled role agent owns the work and hand it to that agent instead of doing it yourself or jumping straight to another skill. Also use when the user wants to set up or manage role-based agents ("war-room", "워룸", "에이전트 팀", "에이전트 관리", "롤 추가", "역할 추가", "담당 에이전트", "롤 끄기", "롤 분리", "지금 상황", "결정 로그"). A manager role routes each request to the owning role, runs it as a subagent, verifies the result with a separate agent and re-assigns until it meets the required bar (or stops and reports alternatives), and keeps the state documents up to date. Roles and on/off switches live in war-room/config.json; current state, decisions and lessons live in STATUS.md, DECISIONS.md and LESSONS.md.
+description: Use BEFORE starting any task in a project that has a war-room/ folder at its root — check whether an enabled role agent owns the work and hand it to that agent instead of doing it yourself or jumping straight to another skill. Also use when the user wants to set up or manage role-based agents ("war-room", "워룸", "에이전트 팀", "에이전트 관리", "롤 추가", "역할 추가", "담당 에이전트", "롤 끄기", "롤 분리", "롤 업데이트", "지금 상황", "결정 로그"). A manager role routes each request to the owning role, runs it as a subagent, verifies the result with a separate agent and re-assigns until it meets the required bar (or stops and reports alternatives), and keeps the state documents up to date. Roles and on/off switches live in war-room/config.json; current state, decisions and lessons live in STATUS.md, DECISIONS.md and LESSONS.md.
 ---
 
 # War Room (롤 에이전트 관리)
@@ -53,7 +53,7 @@ war-room/
 |---|---|
 | `enabled` | 전체 스위치. `false`면 배정·문서 갱신 없이 평소처럼 직접 일하고, mod의 시스템 프롬프트 지침도 빠진다 |
 | `maxAttempts` | 한 일에 시도할 최대 횟수 (기본 3). 사용자가 일마다 따로 정할 수 있고, "될 때까지" 같은 뜻의 지시가 있으면 무시한다 |
-| `suggestRoles` | 롤 분리 제안 스위치 (기본 `true`). `false`면 신호를 쌓지도 묻지도 않는다 |
+| `suggestRoles` | 롤 제안(새 롤·분리·기존 롤 갱신) 스위치 (기본 `true`). `false`면 신호를 쌓지도 묻지도 않는다 |
 | `roles.<id>` | 롤 스위치. `false`면 배정 후보에서 뺀다. 롤 파일은 지우지 않는다 |
 
 - on/off 값이 없으면 `true`로 본다. 롤을 추가할 때 config에 `true`로 넣는다.
@@ -151,18 +151,19 @@ war-room/
 
 맞는 롤이 없어 직접 처리했을 때도 6·7번을 한다. 담당은 `manager`로 적는다.
 
-### 롤 분리 제안 (`references/role-split.md`)
+### 롤 제안 (새 롤·분리·갱신) (`references/role-split.md`)
 
-7번 때 아래 신호를 확인하고 `STATUS.md`의 `## 롤 후보`에 쌓는다. 기준을 넘으면 8번 보고 **뒤에** 롤 초안을 보여주며 분리할지 묻는다. 승인 없이 롤을 만들지 않는다.
+7번 때 반복 신호를 확인하고 `STATUS.md`의 `## 롤 후보`에 `[새 롤]`·`[분리 · 롤]`·`[갱신 · 롤]`로 구분해 쌓는다. 기준을 넘으면 8번 보고 **뒤에** 초안을 보여주며 한 번 묻는다. 승인 없이 롤 파일을 만들거나 고치지 않는다.
 
-질문 맨 아래에는 항상 `(이 질문은 war-room/config.json의 "suggestRoles": false로 끌 수 있어요)`를 붙이고, 선택지에 "앞으로 묻지 않기"를 넣는다. 고르면 `suggestRoles`를 `false`로 바꾼다.
+- **새 롤·분리 신호**: 자주, 길게, 참고할 것이 많음, 롤이 너무 큼.
+- **기존 롤 갱신 신호**: 같은 지시 반복, 같은 맥락 반복, 범위 밖 반복, 같은 확인 반복. 성공해도 반복되면 센다.
+- **고르는 순서**: 걸치는 롤 수로 갈래를 정한다 (하나면 갱신, 없으면 새 롤, 둘 이상이면 두 안 나란히). 갱신 결과가 너무 커지면 분리로 바꾼다.
+- 신호 기준(수치)과 판단 규칙은 `references/role-split.md`에만 둔다.
+- 같은 내용이 `LESSONS.md` 반영 후보에도 있으면 하나로 묶어 묻는다.
 
-- **자주**: 롤 없이 매니저가 직접 한 같은 종류의 일이 3번
-- **길게**: 한 요청이 단계 5개 이상, 시도 3번 초과, 여러 세션에 걸침
-- **참고할 것이 많음**: 같은 문서·규칙을 매번 다시 읽음, 롤 없는 영역의 교훈 3개 이상
-- **롤이 너무 큼**: 기존 롤이 서로 다른 두 종류의 일을 맡거나 150줄을 넘음 → 나누기를 제안
+질문 맨 아래에는 항상 `(이 질문은 war-room/config.json의 "suggestRoles": false로 끌 수 있어요)`를 붙이고, 선택지에 "앞으로 묻지 않기"를 넣는다. 고르면 `suggestRoles`를 `false`로 바꾼다. 갱신 제안은 롤 파일의 어느 절에 무엇을 넣을지 초안을 보여준다.
 
-거절하면 `DECISIONS.md`에 적고 같은 후보는 다시 묻지 않는다 (신호가 2배가 되면 한 번 더).
+"지금은 안 함"은 거절로 기록하지 않고 후보에 남긴다. 사용자가 명시적으로 원하지 않는다고 했을 때만 `DECISIONS.md`에 적고 같은 후보는 다시 묻지 않는다 (신호가 2배가 되면 한 번 더).
 
 ### 롤 에이전트에게 주는 프롬프트
 
@@ -213,7 +214,7 @@ war-room/
 - **진행 중**: `<롤 id> · 작업 · 시도 n/최대 · 남은 실패 기준`
 - **다음 할 일**: 사용자가 말했거나 보고의 "남은 일"에서 나온 것
 - **막힌 것**: 사용자 결정이 필요한 것
-- **롤 후보**: 롤 분리 신호. 다시 쓸 때도 이어서 남긴다 (`references/role-split.md`)
+- **롤 후보**: 새 롤·분리·갱신 신호(`[종류]` 표시). 다시 쓸 때도 이어서 남긴다 (`references/role-split.md`)
 - **최근 완료**: `날짜 · 롤 · 한 줄`, 최신이 위. 10개를 넘으면 아래쪽을 `archive/STATUS-YYYY-MM.md`(완료한 달)에 옮긴다
 
 "지금 뭐 하고 있어", "다음 뭐 해" 같은 질문은 이 파일로 답한다.
