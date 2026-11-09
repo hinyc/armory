@@ -22,6 +22,7 @@
 
 ## 최근 완료 (최대 10개, 넘치면 archive/로)
 
+- 2026-11-09 · release · v0.3.1 릴리즈 (중복 롤 후보 동률 처리, 교훈 3개 롤 문서 반영)
 - 2026-11-09 · skill-author · 중복 롤 후보 비교가 동률일 때 처리 추가 (제안 에이전트는 표시, 매니저는 사용자가 고름)
 - 2026-11-09 · manager · 교훈 3개(skill-author 비교 기준, mod-dev 진입점 등록, manager 에이전트 종류 확인) 롤 문서에 반영
 - 2026-11-05 · release · v0.3.0 릴리즈 (war-room-guard mod, 롤 후보 개수 제한 해제·중복 배제)
@@ -31,4 +32,3 @@
 - 2026-11-05 · release · v0.2.2 릴리즈 (질문 띠 미표시 수정, skill-author·mod-dev 교훈 반영)
 - 2026-11-05 · manager · mod-dev 교훈(실제 엔진 값으로 테스트, 디버그 로그로 먼저 확인) roles/mod-dev.md에 반영
 - 2026-11-05 · mod-dev · 질문 띠가 안 뜨던 버그 수정 (엔진 기본 그림 {type:'engine'}을 다른 mod 그림으로 보고 양보), 테스트 추가, 검증 1회 통과·실제 세션에서 표시 확인
-- 2026-11-05 · manager · skill-author 교훈(예외는 같은 항목에 묶고 판단 근거 적기) roles/skill-author.md에 반영
