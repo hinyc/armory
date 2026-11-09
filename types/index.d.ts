@@ -20,6 +20,27 @@ export type Question = {
   status: QuestionStatus
 }
 
+/** 평가 진행 파일(war-room/.eval/<롤>.json)의 값 타입. 계약은 skills/war-room/references/evaluation.md. */
+export type EvalStatus = 'pass' | 'fail' | 'warn' | 'running' | 'pending' | 'na'
+export type EvalGroup = 'criteria' | 'history' | 'side-effects' | 'concepts' | 'metrics'
+export type EvalMetric = { name: string; value: number; unit: string; limit?: number; baseline?: number }
+export type EvalItem = { group: EvalGroup; status: EvalStatus; summary?: string; metrics?: EvalMetric[] }
+export type EvalRun = {
+  attempt: number
+  state?: 'planning' | 'planned' | 'running' | 'done' | 'aborted'
+  verdict?: 'pass' | 'fail'
+  focus?: string
+  items: EvalItem[]
+}
+export type EvalProgress = {
+  task: string
+  role: string
+  maxAttempts?: number
+  previous?: EvalRun
+  current: EvalRun
+  updatedAt: string
+}
+
 declare module 'claude-code' {
   interface PluginState {
     armory: {
@@ -28,6 +49,8 @@ declare module 'claude-code' {
       enabled: boolean
       /** 경과 시간 표시용 현재 시각(ms). 진행 중일 때 1초마다 갱신. */
       now: number
+      /** 지금 보이는 평가 진행(running·planning). 1초마다 파일을 다시 읽어 바뀔 때만 갱신. */
+      evalBands: readonly EvalProgress[]
     }
   }
 }

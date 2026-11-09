@@ -36,21 +36,25 @@ export function isEnabledConfig(text: string): boolean {
   return manager !== false
 }
 
-/** cwd에서 위로 올라가며 처음 만나는 war-room/config.json. 켜져 있으면 그 폴더, 아니면 undefined. */
-export async function findEnabledWarRoom($: EngineInterface): Promise<WarRoom | undefined> {
+/** cwd에서 위로 올라가며 처음 만나는 war-room/config.json. 켜짐 여부와 상관없이 폴더와 config 내용을 돌려준다. */
+export async function findWarRoom($: EngineInterface): Promise<{ dir: string; configText: string } | undefined> {
   try {
     let dir: string | undefined = await $.session.cwd()
     while (dir !== undefined) {
       const text = await $.fs.read(join(dir, CONFIG_PATH)).catch(() => undefined)
-      if (typeof text === 'string') {
-        return isEnabledConfig(text) ? { dir: join(dir, 'war-room') } : undefined
-      }
+      if (typeof text === 'string') return { dir: join(dir, 'war-room'), configText: text }
       dir = parentOf(dir)
     }
   } catch {
-    // 찾기 실패는 꺼진 것으로 본다.
+    // 찾기 실패는 없음으로 본다.
   }
   return undefined
+}
+
+/** findWarRoom 결과 중 켜져 있는 war-room만. 꺼졌거나 없으면 undefined. */
+export async function findEnabledWarRoom($: EngineInterface): Promise<WarRoom | undefined> {
+  const found = await findWarRoom($)
+  return found !== undefined && isEnabledConfig(found.configText) ? { dir: found.dir } : undefined
 }
 
 /** 시스템 프롬프트에 넣을 지침. */
