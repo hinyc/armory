@@ -38,6 +38,9 @@ test('config가 켜져 있으면 섹션을 맨 뒤에 session으로 추가한다
   expect(added.text).toContain('armory:war-room')
   expect(added.text).toContain('서브에이전트로 실행 중이면')
   expect(added.text).toContain('메인 세션만 따른다')
+  expect(added.text).toContain('하 등급 일만 매니저가 직접')
+  expect(added.text).toContain('등급 중')
+  expect(added.text).not.toContain('맞는 롤이 없으면 그렇다고 알리고 매니저가 직접 한다')
 })
 
 test('enabled가 false면 섹션을 넣지 않는다', async ($, on) => {
