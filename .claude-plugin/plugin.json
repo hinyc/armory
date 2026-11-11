@@ -1,7 +1,7 @@
 {
   "name": "armory",
   "description": "개인 업무용 스킬 모음: 커밋 정리, 이슈 작성, 진행 대시보드, 화면설계서, 롤 에이전트 관리, 입력창 위 질문 요약 띠",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "license": "MIT",
   "author": {
     "name": "inyeol Hong",
