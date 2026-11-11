@@ -11,6 +11,68 @@ description: Use when creating git commits with multiple changes, to structure m
 
 핵심 원칙: 제목은 전체를 요약하고, 상세내용은 수정사항을 쉽게 파악할 수 있게 작성합니다.
 
+## 모델 선택
+
+메시지 초안은 기본적으로 경량 모델(claude-haiku)이 쓰고, 변경 규모가 기준을 넘으면 중급 모델(claude-sonnet)이 쓴다. 커밋(`git commit`)은 이 스킬을 실행한 세션(초안 서브에이전트가 아닌 쪽)이 한다. 메인 세션이든 롤 서브에이전트든 같다.
+
+### 1. 규모 재기
+
+대상은 커밋에 들어갈 변경이다. 재기 전에 커밋할 파일을 먼저 `git add` 한다. 새 파일(추적 안 된 파일)도 `git add` 해야 numstat에 잡힌다. 스테이징된 것이 있으면 그것을, 없으면 작업 트리의 추적 파일 변경 전체(`git diff HEAD`)를 잰다. 커밋이 하나도 없는 저장소(HEAD 없음)에서 스테이징도 없으면 잴 것이 없으므로 `files=0`이 나온다. 이때는 `git add` 후 다시 잰다.
+
+```bash
+if git diff --cached --quiet; then
+  git rev-parse -q --verify HEAD >/dev/null && git -c core.quotePath=false diff HEAD --numstat || true
+else git -c core.quotePath=false diff --cached --numstat; fi |
+awk -F'\t' '
+  { files++
+    split($3, p, "/"); area[(length(p) > 1) ? p[1] : "(root)"] = 1
+    if ($1 == "-") next                                    # 바이너리: 줄 수 제외
+    if ($3 ~ /(^|\/)(package-lock\.json|pnpm-lock\.yaml|yarn\.lock|Cargo\.lock|poetry\.lock|go\.sum)$/) next   # 잠금 파일: 줄 수 제외
+    lines += $1 + $2 }
+  END { n = 0; for (a in area) n++
+        printf "files=%d lines=%d areas=%d\n", files, lines, n }'
+```
+
+- 생성물(빌드 산출물, 자동 생성 코드 등)도 줄 수에서 뺀다. 경로·헤더로 알아볼 수 있는 것만 뺀다. 판단이 서지 않으면 뺀 것으로 치지 않고 센다.
+- `core.quotePath=false`는 한글 경로가 따옴표로 감싸져 영역이 따로 세지는 것을 막는다. 경로를 출력하는 git 호출에는 항상 붙인다.
+- 커밋 대상인데 `git add` 하지 못한 새 파일이 남았다면(스테이징을 미루는 경우) `git -c core.quotePath=false ls-files --others --exclude-standard`로 찾아 파일 수와 영역 수에 더하고, 줄 수는 `wc -l`로 더한다.
+
+### 2. 기준
+
+아래 중 하나라도 해당하면 **sonnet**, 하나도 해당하지 않으면 **haiku**.
+
+| 지표 | sonnet 기준 |
+|------|-------------|
+| 바뀐 파일 수 | 6개 이상 (잠금 파일·생성물·바이너리도 파일 수에는 센다) |
+| 변경 줄 수 (추가+삭제) | 300줄 이상 (잠금 파일·생성물·바이너리 제외) |
+| 최상위 영역 수 | 3곳 이상 (경로의 첫 폴더가 영역, 루트 파일은 "루트" 하나로 센다. awk에서는 `(root)`) |
+
+예외: 사용자가 모델을 지정하면(예: "sonnet으로 써줘", "haiku로 커밋해") 기준과 상관없이 그것을 따른다. 요청문에 모델 이름이 있는지를 보고 판단한다.
+
+### 3. 알리기
+
+고른 모델과 근거를 한 줄로 사용자에게 알린다.
+
+- 예: `커밋 메시지 모델: haiku (파일 3개, 120줄, 영역 1곳)`
+- 예: `커밋 메시지 모델: sonnet (파일 8개, 420줄, 영역 3곳 - 3개 기준 해당)`
+- 사용자가 지정했으면 `커밋 메시지 모델: sonnet (사용자 지정)`
+
+### 4. 초안 쓰기
+
+Agent 도구로 서브에이전트를 띄워 메시지 초안만 받는다. `model`에 `"haiku"` 또는 `"sonnet"`을 그대로 넣는다.
+
+서브에이전트에게 넘길 것:
+- diff를 읽는 명령: 1단계에서 쓴 대상과 같은 것(`git -c core.quotePath=false diff --cached` 또는 `git -c core.quotePath=false diff HEAD`)
+- 이 스킬의 메시지 형식(구조, 제목 작성법, 상세내용 작성법, 검사 체크리스트)
+- 요청: "메시지 초안 텍스트만 돌려준다. 커밋하지 않는다. 파일을 수정하지 않는다."
+
+받은 초안을 이 스킬을 실행한 세션이 검사 체크리스트로 확인하고, 필요하면 고친 뒤 `git commit`을 한다.
+
+대체 경로: 아래 경우에는 서브에이전트 없이 이 스킬을 실행한 세션이 직접 쓴다.
+- Agent 도구가 없을 때
+- 이 스킬을 실행한 세션이 이미 고른 모델로 실행 중일 때 (이미 haiku인데 haiku가 필요하거나, 이미 sonnet 이상인데 sonnet이 필요한 경우)
+- 서브에이전트 호출이 실패했을 때
+
 ## 구조
 
 ```

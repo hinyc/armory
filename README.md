@@ -11,7 +11,7 @@
 
 | 이름 | 종류 | 한 줄 요약 | 트리거 예 |
 |---|---|---|---|
-| [`commit`](#commit) | skill | 여러 변경을 담은 커밋 메시지를 제목 + 3~5줄로 정리 | "커밋해" |
+| [`commit`](#commit) | skill | 여러 변경을 담은 커밋 메시지를 제목 + 3~5줄로 정리 (기본 haiku, 큰 변경은 sonnet) | "커밋해" |
 | [`issue-writer`](#issue-writer) | skill | GitHub 이슈·Jira 티켓을 표준 양식으로 작성·수정·정리 | "이슈 만들어줘", "#12 정리" |
 | [`status-dashboard`](#status-dashboard) | skill | AI가 JSON을 관리하고 사람은 HTML로 보는 진행 대시보드 | "진행상황 대시보드" |
 | [`screen-spec`](#screen-spec) | skill | 실제 화면 캡처 + 목 API + 코드 기반 설명으로 화면설계서 생성·갱신 | "화면설계서 만들어줘" |
@@ -25,6 +25,8 @@
 ## commit
 
 변경이 여러 개인 커밋을 `<type>: <한글 제목>` + bullet 3~5줄로 쓴다. 타입은 `feat` `fix` `refactor` `perf` `docs` `test` `chore`.
+
+메시지 초안은 기본 haiku 서브에이전트가 쓰고, 파일 6개 이상·변경 300줄 이상·최상위 영역 3곳 이상 중 하나라도 해당하면 sonnet이 쓴다. 모델을 직접 지정하면 그것을 따른다.
 
 ```
 feat: 사용자 역할 요청 기능 추가
