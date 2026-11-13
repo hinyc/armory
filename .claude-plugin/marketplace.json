@@ -1,14 +1,14 @@
 {
   "name": "armory",
   "description": "Personal marketplace for the armory plugin",
-  "owner": { "name": "inyeol Hong", "email": "dlsduf@gmail.com" },
+  "owner": { "name": "inyeol Hong" },
   "plugins": [
     {
       "name": "armory",
-      "description": "개인 업무용 스킬 모음: 프로젝트 관리, 커밋 정리, 이슈 작성, 진행 대시보드, 화면설계서, 롤 에이전트 관리",
-      "version": "0.6.1",
+      "description": "개인 업무용 스킬 모음: 커밋 정리, 이슈 작성, 진행 대시보드, 화면설계서, 롤 에이전트 관리, 입력창 위 질문 요약 띠",
+      "version": "0.7.0",
       "source": "./",
-      "author": { "name": "inyeol Hong", "email": "dlsduf@gmail.com" }
+      "author": { "name": "inyeol Hong" }
     }
   ]
 }
