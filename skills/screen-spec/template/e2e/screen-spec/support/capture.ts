@@ -2,7 +2,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { expect, type Locator, type Page, type TestInfo } from '@playwright/test'
 import { SPEC } from './spec.config'
-import { ID_PATTERN, type BadgePosition, type CaptureEntry, type CaptureMeta, type Mark } from './types'
+import { ID_PATTERN, markSchema, type BadgePosition, type CaptureEntry, type CaptureMeta, type Mark } from './types'
 
 const captureCounts = new WeakMap<TestInfo, number>()
 
@@ -19,13 +19,42 @@ async function settle(page: Page): Promise<void> {
   await page.evaluate(() => document.fonts.ready.then(() => true))
 }
 
-async function assertUniqueId(dataFile: string, specFile: string, id: string): Promise<void> {
-  const existing = await fs.readFile(dataFile, 'utf8').catch(() => null)
-  if (existing === null) return
-  const previous = JSON.parse(existing) as Pick<CaptureEntry, 'specFile'>
-  if (previous.specFile !== specFile) {
-    throw new Error(`캡처 id "${id}"가 ${previous.specFile}와 ${specFile}에서 중복됩니다`)
+const usedIds = new WeakMap<TestInfo, Set<string>>()
+
+/**
+ * 같은 실행 안에서 캡처 id가 겹치면 오류. 이전 실행의 파일이나 재시도(retry)는 겹침이 아니다.
+ * 워커가 달라도 잡도록, 이번 실행(SPEC.runId) 전용 폴더에 id별 표식 파일을 만든다.
+ * 표식에는 처음 쓴 테스트의 id를 적는다. 같은 테스트의 재시도는 통과, 다른 테스트면 중복이다.
+ */
+async function assertUniqueId(testInfo: TestInfo, id: string): Promise<void> {
+  const seen = usedIds.get(testInfo) ?? new Set<string>()
+  if (seen.has(id)) throw new Error(`캡처 id "${id}"가 같은 테스트 "${testInfo.title}"에서 두 번 쓰였습니다`)
+  usedIds.set(testInfo, new Set([...seen, id]))
+
+  const dir = path.join(SPEC.outDir, '.run', SPEC.runId)
+  const marker = path.join(dir, id)
+  await fs.mkdir(dir, { recursive: true })
+  const owner = `${testInfo.testId}\n${path.relative(process.cwd(), testInfo.file)}:${testInfo.line} ${testInfo.title}`
+  try {
+    await fs.writeFile(marker, owner, { flag: 'wx' })
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error
+    const [ownerId = '', ownerName = '다른 테스트'] = (await fs.readFile(marker, 'utf8')).split('\n')
+    if (ownerId !== testInfo.testId) {
+      throw new Error(`캡처 id "${id}"가 ${ownerName}와 ${path.relative(process.cwd(), testInfo.file)}:${testInfo.line} ${testInfo.title}에서 중복됩니다`)
+    }
   }
+}
+
+/** 표시 값이 문서 스키마에 맞는지 캡처 시점에 확인한다. 어긋나면 어느 캡처의 몇 번째 표시인지 알려 준다. */
+function assertValidMarks(id: string, marks: readonly Mark[]): void {
+  marks.forEach((mark, index) => {
+    const result = markSchema.safeParse(mark)
+    if (result.success) return
+    const issue = result.error.issues[0]
+    const where = issue?.path.map(String).join('.') ?? ''
+    throw new Error(`캡처 "${id}"의 marks[${index}] ${where}: ${issue?.message ?? '형식 오류'} (num은 숫자 또는 3자 이하 문자열)`)
+  })
 }
 
 /** 스샷 위에 박스·번호로 표시할 요소. 좌표는 캡처할 때 재므로 화면이 바뀌어도 따라간다. */
@@ -93,11 +122,12 @@ export async function captureScreen(
   const specFile = path.relative(process.cwd(), testInfo.file)
   const image = `shots/${meta.id}.png`
   const dataFile = path.join(SPEC.outDir, 'data', `${meta.id}.json`)
-  await assertUniqueId(dataFile, specFile, meta.id)
+  await assertUniqueId(testInfo, meta.id)
 
   await settle(page)
   // 찍기 전에 잰다. 전체 페이지 스샷은 찍는 동안 스크롤 위치가 바뀔 수 있다.
   const marks = options.marks?.length ? await measureMarks(page, options.marks, options.target) : undefined
+  if (marks) assertValidMarks(meta.id, marks)
   const shotPath = path.join(SPEC.outDir, image)
   const shotOptions = { path: shotPath, animations: 'disabled', caret: 'hide' } as const
   await (options.target

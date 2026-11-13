@@ -26,7 +26,7 @@ async function tick($: EngineInterface): Promise<void> {
 
 function startTicker($: EngineInterface): void {
   stopTicker()
-  ticker = $.clock.every(TICK_MS, () => void tick($))
+  ticker = $.clock.every(TICK_MS, () => void tick($).catch(() => {}))
 }
 
 /** askedAt이 같은 질문일 때만 고친다(그 사이 새 질문이 왔으면 무시). */
@@ -64,7 +64,7 @@ export async function beginQuestion($: EngineInterface, prompt: string, turnId: 
   startTicker($)
   if (!isSummarized) {
     // 프롬프트 제출을 막지 않도록 타이머에서 요약
-    $.clock.after(0, () => void applyModelSummary($, askedAt, prompt))
+    $.clock.after(0, () => void applyModelSummary($, askedAt, prompt).catch(() => {}))
   }
 }
 
@@ -95,7 +95,8 @@ const STATUS_BY_REASON: Record<TurnCompleteReason, Question['status']> = {
 export async function finishTurn($: EngineInterface, turnId: string, reason: TurnCompleteReason): Promise<void> {
   const question = await read($, questionAtom)
   if (question === null || question.status !== 'running') return
-  if (question.turnId !== null && question.turnId !== turnId) return
+  // 아직 턴에 묶이지 않은 질문은 앞 턴의 종료로 끝내지 않는다.
+  if (question.turnId !== turnId) return
   const endedAt = await $.clock.now()
   await patchQuestion($, question.askedAt, { endedAt, status: STATUS_BY_REASON[reason] })
   stopTicker()

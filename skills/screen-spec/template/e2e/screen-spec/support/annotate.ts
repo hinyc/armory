@@ -168,7 +168,10 @@ async function isFresh(out: string, inputs: readonly string[]): Promise<boolean>
 async function removeStale(outDir: string, keep: ReadonlySet<string>): Promise<void> {
   const names = await fs.readdir(outDir).catch(() => [] as string[])
   await Promise.all(
-    names.filter((name) => name.endsWith('.png') && !keep.has(name)).map((name) => fs.rm(path.join(outDir, name), { force: true })),
+    // 중간에 끊긴 실행이 남긴 임시 HTML(.<name>.html)도 함께 지운다
+    names
+      .filter((name) => (name.endsWith('.png') && !keep.has(name)) || (name.startsWith('.') && name.endsWith('.html')))
+      .map((name) => fs.rm(path.join(outDir, name), { force: true })),
   )
 }
 
@@ -206,12 +209,15 @@ async function renderJobs(jobs: readonly Job[], outDir: string): Promise<void> {
       if (!size) continue
       const [, , width, height] = job.crop ?? [0, 0, size.width, size.height]
       const htmlFile = path.join(outDir, `.${job.name}.html`)
-      await fs.writeFile(htmlFile, overlayHtml(job, size))
-      await page.setViewportSize({ width: Math.round(width), height: Math.round(height) })
-      await page.goto(pathToFileURL(htmlFile).href)
-      await page.waitForFunction(() => [...document.images].every((img) => img.complete && img.naturalWidth > 0))
-      await page.screenshot({ path: path.join(outDir, `${job.name}.png`), animations: 'disabled' })
-      await fs.rm(htmlFile, { force: true })
+      try {
+        await fs.writeFile(htmlFile, overlayHtml(job, size))
+        await page.setViewportSize({ width: Math.round(width), height: Math.round(height) })
+        await page.goto(pathToFileURL(htmlFile).href)
+        await page.waitForFunction(() => [...document.images].every((img) => img.complete && img.naturalWidth > 0))
+        await page.screenshot({ path: path.join(outDir, `${job.name}.png`), animations: 'disabled' })
+      } finally {
+        await fs.rm(htmlFile, { force: true })
+      }
     }
   } finally {
     await browser.close()

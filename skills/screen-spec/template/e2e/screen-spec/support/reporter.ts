@@ -1,3 +1,4 @@
+import { rmSync } from 'node:fs'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import type { FullResult, Reporter, TestCase, TestResult } from '@playwright/test/reporter'
@@ -43,6 +44,11 @@ export default class ScreenSpecReporter implements Reporter {
 
   constructor(private readonly options: ReporterOptions = {}) {}
 
+  /** 캡처 id 중복 검사용 표식(capture.ts)은 실행 하나 동안만 쓴다. 이전 실행 것이 남아 있으면 지운다. */
+  onBegin(): void {
+    rmSync(path.join(SPEC.outDir, '.run'), { recursive: true, force: true })
+  }
+
   onTestEnd(test: TestCase, result: TestResult): void {
     if (result.status === 'passed' || result.status === 'skipped') return
     const failure: Failure = {
@@ -55,6 +61,7 @@ export default class ScreenSpecReporter implements Reporter {
   }
 
   async onEnd(result: FullResult): Promise<{ status: FullResult['status'] } | undefined> {
+    rmSync(path.join(SPEC.outDir, '.run'), { recursive: true, force: true })
     try {
       const sources = await loadSources()
       // 표시(박스·번호)가 있는 캡처는 그린 이미지로 바꿔 문서에 넣는다

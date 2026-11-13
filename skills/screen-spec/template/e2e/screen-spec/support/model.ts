@@ -42,11 +42,19 @@ export interface SpecModel {
   readonly warnings: readonly string[]
 }
 
+/** id가 constructor 같은 프로토타입 이름이어도 자기 키만 읽는다. */
+function own<T>(record: Readonly<Record<string, T>>, key: string): T | undefined {
+  return Object.hasOwn(record, key) ? record[key] : undefined
+}
+
+/** 로캘과 무관한 코드 포인트 순서 비교 */
+const compareText = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0)
+
 const sectionOrder = new Map(SPEC.sections.map((section, index) => [section.key, index]))
 
 function compareEntries(a: CaptureEntry, b: CaptureEntry): number {
   const bySection = (sectionOrder.get(a.section) ?? 999) - (sectionOrder.get(b.section) ?? 999)
-  return bySection !== 0 ? bySection : a.sortKey.localeCompare(b.sortKey)
+  return bySection !== 0 ? bySection : compareText(a.sortKey, b.sortKey)
 }
 
 function groupBy<T>(items: readonly T[], keyOf: (item: T) => string): readonly (readonly T[])[] {
@@ -66,7 +74,7 @@ function buildSections(entries: readonly CaptureEntry[], sources: Sources): read
       entries: screenEntries.map((entry, ei) => ({
         ...entry,
         number: `${si + 1}.${ci + 1}.${ei + 1}`,
-        links: sources.mapping.links[entry.id] ?? [],
+        links: own(sources.mapping.links, entry.id) ?? [],
       })),
     }))
     return { key, number: String(si + 1), label, screens }
@@ -95,7 +103,7 @@ function buildRequirements(sources: Sources): readonly RequirementNode[] {
 }
 
 function applyOverrides(sources: Sources): readonly CaptureEntry[] {
-  return sources.entries.map((entry) => ({ ...entry, ...sources.overrides[entry.id] }))
+  return sources.entries.map((entry) => ({ ...entry, ...own(sources.overrides, entry.id) }))
 }
 
 /** references/writing-descriptions.md의 길이 기준. [[id|문구]]는 보이는 문구만 센다. */
@@ -167,7 +175,7 @@ export function buildModel(sources: Sources): SpecModel {
     sections,
     requirements: buildRequirements(sources),
     entryCount: entries.length,
-    linkedEntryCount: entries.filter((entry) => (sources.mapping.links[entry.id] ?? []).length > 0)
+    linkedEntryCount: entries.filter((entry) => (own(sources.mapping.links, entry.id) ?? []).length > 0)
       .length,
     warnings: collectWarnings(sources),
   }

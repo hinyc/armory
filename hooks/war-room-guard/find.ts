@@ -3,7 +3,7 @@ import type { EngineInterface } from 'claude-code'
 
 const CONFIG_PATH = 'war-room/config.json'
 
-export type WarRoom = { readonly dir: string }
+export type WarRoom = { readonly dir: string; readonly configText: string }
 
 /** 위 폴더로 한 칸. 루트면 undefined. */
 export function parentOf(dir: string): string | undefined {
@@ -54,7 +54,17 @@ export async function findWarRoom($: EngineInterface): Promise<{ dir: string; co
 /** findWarRoom 결과 중 켜져 있는 war-room만. 꺼졌거나 없으면 undefined. */
 export async function findEnabledWarRoom($: EngineInterface): Promise<WarRoom | undefined> {
   const found = await findWarRoom($)
-  return found !== undefined && isEnabledConfig(found.configText) ? { dir: found.dir } : undefined
+  return found !== undefined && isEnabledConfig(found.configText) ? { dir: found.dir, configText: found.configText } : undefined
+}
+
+/** 평가 롤이 꺼져 있지 않은지. config를 읽지 못하면 켜짐으로 본다(isEnabledConfig와 같은 기준). */
+export function isEvaluatorOn(configText: string): boolean {
+  try {
+    const roles = (JSON.parse(configText) as { roles?: unknown } | null)?.roles
+    return typeof roles !== 'object' || roles === null || (roles as { evaluator?: unknown }).evaluator !== false
+  } catch {
+    return true
+  }
 }
 
 /** 시스템 프롬프트에 넣을 지침. */

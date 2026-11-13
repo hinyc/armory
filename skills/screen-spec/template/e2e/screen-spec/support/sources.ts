@@ -44,15 +44,17 @@ function formatIssues(issues: readonly Issue[]): string {
 }
 
 /**
- * 파일이 없으면 조용히 기본값을 쓴다 (요구사항 기능을 안 쓰는 프로젝트가 많다).
- * 형식이 틀리면 파일 경로를 담은 오류로 생성을 중단한다.
+ * 파일이 없으면(ENOENT) 조용히 기본값을 쓴다 (요구사항 기능을 안 쓰는 프로젝트가 많다).
+ * 다른 읽기 오류나 형식이 틀리면 파일 경로를 담은 오류로 생성을 중단한다.
  */
 async function loadJson<T>(file: string, schema: Parser<T>, fallback: T): Promise<T> {
   let raw: string
   try {
     raw = await fs.readFile(file, 'utf8')
-  } catch {
-    return fallback
+  } catch (error) {
+    // 파일이 없을 때만 기본값. 권한·디렉터리 등 나머지 읽기 오류는 숨기지 않는다.
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return fallback
+    throw new Error(`${file}: 읽을 수 없음 — ${(error as Error).message}`)
   }
   let parsed: unknown
   try {

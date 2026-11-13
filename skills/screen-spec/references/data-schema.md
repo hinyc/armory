@@ -2,13 +2,13 @@
 
 스키마 정의 원본은 `template/e2e/screen-spec/support/types.ts`(zod)이다.
 
-## 캡처 항목: `docs/screen-spec/data/<id>.json`
+## 캡처 항목: `<OUT_DIR>/data/<id>.json` (`<OUT_DIR>` 규칙은 SKILL.md)
 
 `captureScreen`이 자동으로 쓴다. 손으로 고치지 않는다.
 
 | 필드 | 설명 |
 |---|---|
-| `id` | kebab-case, 전체에서 유일. 파일 이름으로도 쓴다 |
+| `id` | kebab-case, 전체에서 유일. 파일 이름으로도 쓴다. 같은 실행 안에서 겹치면 그 테스트가 오류로 실패한다(재시도·이전 실행의 결과는 겹침이 아니다) |
 | `section` | `spec.config.ts`의 `sections` key. 목차 순서가 된다 |
 | `screen` | 같은 값끼리 한 화면으로 묶인다 |
 | `kind` | `page`(기본 모습) · `state`(같은 화면의 다른 모습) · `dialog`(입력·선택을 받는 창) · `alert`(메시지만 알리는 창, 앱이 그린 것 포함) · `component`(일부 확대) |
@@ -65,7 +65,8 @@
 
 | 상황 | 결과 |
 |---|---|
-| 외부 파일·폴더가 없음 | 경고 없이 기본값으로 진행 (요구사항 기능을 안 쓰는 경우) |
+| 외부 파일이 없음(ENOENT) | 경고 없이 기본값으로 진행 (요구사항 기능을 안 쓰는 경우) |
+| 외부 파일이 있는데 읽을 수 없음(권한·폴더 등) | 파일 경로를 담아 생성 중단 |
 | JSON 문법 오류, 스키마 오류 | 파일 경로와 위치를 출력하고 생성 중단 (종료 코드 1) |
 | 없는 캡처·요구사항·부모를 가리킴 | 경고 (`report.json`의 `warnings`) |
 | `sections`에 없는 section | 경고, 목차 맨 뒤로 |

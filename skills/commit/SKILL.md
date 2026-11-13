@@ -25,14 +25,18 @@ if git diff --cached --quiet; then
 else git -c core.quotePath=false diff --cached --numstat; fi |
 awk -F'\t' '
   { files++
-    split($3, p, "/"); area[(length(p) > 1) ? p[1] : "(root)"] = 1
+    f = $3                                                 # 이름 변경 표기(a => b, dir/{a => b}/f)는 새 경로로 푼다
+    if (f ~ /\{[^}]* => /) { sub(/\{[^}]* => /, "{", f); gsub(/[{}]/, "", f); gsub(/\/\//, "/", f); sub(/^\//, "", f) }
+    else if (f ~ / => /) sub(/^.* => /, "", f)
+    split(f, p, "/"); area[(length(p) > 1) ? p[1] : "(root)"] = 1
     if ($1 == "-") next                                    # 바이너리: 줄 수 제외
-    if ($3 ~ /(^|\/)(package-lock\.json|pnpm-lock\.yaml|yarn\.lock|Cargo\.lock|poetry\.lock|go\.sum)$/) next   # 잠금 파일: 줄 수 제외
+    if (f ~ /(^|\/)(package-lock\.json|pnpm-lock\.yaml|yarn\.lock|Cargo\.lock|poetry\.lock|go\.sum)$/) next   # 잠금 파일: 줄 수 제외
     lines += $1 + $2 }
   END { n = 0; for (a in area) n++
         printf "files=%d lines=%d areas=%d\n", files, lines, n }'
 ```
 
+- 이름이 바뀐 파일은 numstat이 `a => b` 또는 `dir/{a => b}/f`로 적는다. 위 awk는 이를 새 경로로 풀어 영역을 센다 (`--no-renames`는 쓰지 않는다. 파일 수 셈이 바뀌어 모델 선택 경계가 움직인다).
 - 생성물(빌드 산출물, 자동 생성 코드 등)도 줄 수에서 뺀다. 경로·헤더로 알아볼 수 있는 것만 뺀다. 판단이 서지 않으면 뺀 것으로 치지 않고 센다.
 - `core.quotePath=false`는 한글 경로가 따옴표로 감싸져 영역이 따로 세지는 것을 막는다. 경로를 출력하는 git 호출에는 항상 붙인다.
 - 커밋 대상인데 `git add` 하지 못한 새 파일이 남았다면(스테이징을 미루는 경우) `git -c core.quotePath=false ls-files --others --exclude-standard`로 찾아 파일 수와 영역 수에 더하고, 줄 수는 `wc -l`로 더한다.

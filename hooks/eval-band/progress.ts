@@ -1,10 +1,15 @@
 // 평가 진행 파일 파싱·표시 판정·포맷. 순수 함수만 둔다. 타입은 types/index.d.ts.
 import type { EvalGroup, EvalItem, EvalMetric, EvalProgress, EvalRun, EvalStatus } from '../../types'
 
+/** 진행 파일 이름(.eval/ 안)을 id로 붙인 항목. 블록 key처럼 파일마다 고유해야 할 때 쓴다. */
+export type EvalEntry = EvalProgress & { id?: string }
+
 export type { EvalGroup, EvalItem, EvalMetric, EvalProgress, EvalRun, EvalStatus }
 
 /** 이 시간 넘게 갱신 없는 진행 중 평가는 죽은 것으로 보고 숨긴다. */
 export const STALE_MS = 30 * 60 * 1000
+/** 이 시간 넘게 미래인 updatedAt은 만료로 본다. */
+export const FUTURE_SKEW_MS = 60 * 1000
 /** 변경 전보다 이 비율을 넘게 나빠지면 경고. */
 export const WARN_RATIO = 0.1
 
@@ -100,6 +105,8 @@ export function isVisible(p: EvalProgress, nowMs: number): boolean {
   if (p.current.state !== 'running' && p.current.state !== 'planning') return false
   const updated = Date.parse(p.updatedAt)
   if (Number.isNaN(updated)) return false
+  // 지금보다 한참 미래인 시각(시계 오류·잘못 쓴 값)은 갱신 확인이 안 되므로 만료로 본다.
+  if (updated - nowMs > FUTURE_SKEW_MS) return false
   return nowMs - updated <= STALE_MS
 }
 

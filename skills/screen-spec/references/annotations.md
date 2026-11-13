@@ -4,7 +4,7 @@
 
 - 방식: 스샷을 깐 HTML에 표시를 절대 위치로 겹쳐 그리고, Chromium으로 그 화면을 PNG로 찍는다.
 - 리포터가 문서를 만들기 직전에 그린다. `screen-spec`, `:only`, `:html` 어느 것을 돌려도 반영된다.
-- 결과: `docs/screen-spec/annotated/<이름>.png`.
+- 결과: `<OUT_DIR>/annotated/<이름>.png`.
 - 입력(스샷·캡처 JSON·표시 파일)이 바뀐 것만 다시 그린다. 더는 쓰이지 않는 결과는 지운다.
 
 ## 언제 쓰나
@@ -37,7 +37,7 @@ await captureDialog(page, testInfo, meta({ id: 'orders-cancel-confirm', kind: 'd
 | 옵션 | 뜻 | 기본 |
 |---|---|---|
 | `target` | 표시할 요소 (Locator). 보이지 않으면 기다리다 실패한다 | 필수 |
-| `num` | 배지에 쓸 번호·글자 (3자 이내). 없으면 박스만 | 없음 |
+| `num` | 배지에 쓸 숫자 또는 3자 이하 문자열. 어긋나면 그 캡처 테스트만 오류로 실패한다. 없으면 박스만 | 없음 |
 | `badge` | 배지 위치: `tl` `tr` `bl` `br` `left` `right` `none` | `tl` |
 | `color` | 박스·배지 색 | `#e5262b` |
 | `pad` | 요소 바깥으로 넓힐 여백(px) | 4 |

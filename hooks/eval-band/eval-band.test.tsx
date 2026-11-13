@@ -168,6 +168,20 @@ test('read: 위 폴더의 war-room도 찾는다', async () => {
   expect(await readProgress(fakeEngine(files, () => '/proj/sub/deep'))).toHaveLength(1)
 })
 
+test('read: role·task가 같은 파일 둘도 파일 이름으로 구분된다', async () => {
+  const files = { ...CONFIG, ...evalFile('a', progress()), ...evalFile('b', progress()) }
+  expect((await readProgress(fakeEngine(files))).map(p => p.id)).toEqual(['a.json', 'b.json'])
+})
+
+test('띠: role·task가 같은 진행 파일 둘도 블록 둘로 그린다', async ($, on) => {
+  mock.clock(on, { now: NOW })
+  engineBeneath(on, { ...CONFIG, ...evalFile('a', progress()), ...evalFile('b', progress()) })
+  const ui = await $.ui.mount(BAND)
+  const text = await allText(ui)
+  expect(text.split('⚖ 평가 · mod-dev · 로그인 폼 수정')).toHaveLength(3)
+  await ui.unmount()
+})
+
 test('띠: 진행 파일 없음 → 아래 그림 그대로', async ($, on) => {
   engineBeneath(on, CONFIG, '아래 그림')
   const ui = await $.ui.mount(BAND)
@@ -215,4 +229,31 @@ test('띠: 평가 띠 위에 질문 띠도 함께 보인다(양보하지 않는�
   expect(text).toContain('빌드 에러 고쳐줘')
   expect(text.indexOf('⚖ 평가')).toBeLessThan(text.indexOf('빌드 에러 고쳐줘'))
   await ui.unmount()
+})
+
+test('M4: 지금보다 60초 넘게 미래인 updatedAt은 만료로 본다', () => {
+  expect(isVisible(progress({ updatedAt: iso(NOW) }), NOW)).toBe(true)
+  expect(isVisible(progress({ updatedAt: iso(NOW + 1_000) }), NOW)).toBe(true)
+  expect(isVisible(progress({ updatedAt: iso(NOW + 31 * 60_000) }), NOW)).toBe(false)
+})
+
+test('M6: verdict 없는 previous는 ✗가 아니라 중립 표시', async ($, on) => {
+  mock.clock(on, { now: NOW })
+  const { verdict: _v, ...noVerdict } = PREVIOUS
+  engineBeneath(on, { ...CONFIG, ...evalFile('mod-dev', progress({ previous: noVerdict })) })
+  const ui = await $.ui.mount(BAND)
+  const text = await allText(ui)
+  expect(text).toContain('이전 (시도 1) –')
+  expect(text).not.toContain('이전 (시도 1) ✗')
+  await ui.unmount()
+})
+
+test('M8: war-room이 꺼져 있거나 evaluator 롤이 꺼져 있으면 읽지 않는다', async () => {
+  const run = evalFile('mod-dev', progress())
+  const off = (config: object) => ({ '/proj/war-room/config.json': JSON.stringify(config), ...run })
+  expect(await readProgress(fakeEngine(off({ enabled: false })))).toEqual([])
+  expect(await readProgress(fakeEngine(off({ roles: { manager: false } })))).toEqual([])
+  expect(await readProgress(fakeEngine(off({ roles: { evaluator: false } })))).toEqual([])
+  expect(await readProgress(fakeEngine(off({ roles: { evaluator: true } })))).toHaveLength(1)
+  expect(await readProgress(fakeEngine({ '/proj/war-room/config.json': '{', ...run }))).toHaveLength(1)
 })

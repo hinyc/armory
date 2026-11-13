@@ -1,6 +1,6 @@
 ---
 name: status-dashboard
-description: Use when the user wants to track or manage issues, tasks, progress, project status, roadmap, or state in a viewable document or dashboard that AI maintains but a human reads. Triggers include "이슈 관리", "진행상황", "상태 관리", "대시보드", "tracking", "progress board". Creates one HTML viewer backed by AI-edited JSON data (optional Markdown + Mermaid for flows), all in a single folder.
+description: Use when the user wants to track progress, tasks, project status, roadmap, or state of a project in a viewable document or dashboard that AI maintains but a human reads. Triggers include "이슈 현황 대시보드", "진행상황", "상태 관리", "대시보드", "tracking", "progress board". Not for writing, updating or cleaning up a single GitHub/Jira issue or ticket body ("이슈 만들어줘", "이슈 정리", "#N 수정"); that is issue-writer. Creates one HTML viewer backed by AI-edited JSON data (optional Markdown + Mermaid for flows), all in a single folder.
 ---
 
 # Status Dashboard (HTML 뷰 + JSON 데이터)
@@ -19,7 +19,7 @@ description: Use when the user wants to track or manage issues, tasks, progress,
 - 혼자(또는 소수) + AI가 코드 실제 상태 기반으로 트래킹을 맡는 경우
 - GitHub Issues의 협업 기능이 필요 없는 단독 프로젝트
 
-**When NOT to use:** 여러 명이 실시간 협업 → GitHub Issues/Projects가 맞다. 단순 메모 한 장 → 그냥 Markdown.
+**When NOT to use:** GitHub/Jira 이슈 하나를 쓰거나 고치거나 정리하는 요청 → `issue-writer`. 여러 명이 실시간 협업 → GitHub Issues/Projects가 맞다. 단순 메모 한 장 → 그냥 Markdown.
 
 ## 왜 이 구조인가 (의사결정 요약)
 
@@ -46,8 +46,8 @@ AI 전용 편집이면 편집 취약성·git diff·grep 논거는 무의미해�
 
 - **HTML은 1개.** 무슨 데이터가 들어와도 그려주는 빈 틀. 디자인 바꿀 때만 손댐(거의 없음).
 - **테마:** 라이트 모드 기본, 헤더 버튼으로 다크 토글(선택값 localStorage 저장, Mermaid 테마도 연동). 색감은 `index.html`의 `:root`(라이트) / `[data-theme="dark"]`(다크) 변수에서 조정.
-- **JSON은 1개 또는 다수.** 양이 커지면 `manifest.json`으로 쪼갠다.
-- **흐름이 필요하면 Markdown + Mermaid.** 뷰어가 fetch해서 다이어그램으로 렌더.
+- **JSON은 1개 또는 다수.** 양이 커지면 `manifest.json`으로 쪼갠다 (아래 "manifest.json 형식").
+- **흐름이 필요하면 Markdown + Mermaid.** 뷰어가 fetch해서 다이어그램으로 렌더. 지원하는 Markdown 범위는 "흐름은 Markdown + Mermaid로" 절.
 
 ## 데이터 계약 (JSON 스키마)
 
@@ -91,6 +91,20 @@ AI 전용 편집이면 편집 취약성·git diff·grep 논거는 무의미해�
 - `verify` (중요): "AI가 코드에서 실제 상태를 확인할 수 있는 구체적 조건". 이게 있어야 AI가 코드 기반으로 상태를 갱신한다.
 - 진행률 = `tasks` 중 done 비율. `tasks`가 없으면 status로 추정(done=100%, in-progress=50%, 그 외 0%).
 
+## manifest.json 형식
+
+데이터를 여러 파일로 나눌 때만 쓴다. 형식:
+
+`{ "project"?, "updated"?, "statuses"?, "flows"?, "sources": ["issues.json", ...] }`
+
+- `sources`는 같은 폴더의 JSON 파일 이름 문자열 배열이고, 각 파일은 `issues` 배열이 필수인 `{ "issues": [...] }`이다.
+- manifest.json이 없으면(404) data.json을 읽는다.
+- manifest.json이 있는데 JSON이 깨졌거나 `sources`가 문자열 배열이 아니면 data.json으로 넘어가지 않고 "manifest.json 형식 오류: <이유>"를 보여준다. 404가 아닌 HTTP 오류, `sources`가 비었음, 경로에 `/`나 `..`가 든 이름도 같은 오류다.
+- 소스 파일을 못 읽거나(연결 실패 포함) JSON이 깨졌거나 `issues`가 배열이 아니면 "<파일>: <이유>" 오류를 보여준다.
+- 소스가 아닌 단일 data.json은 `issues`가 없으면 빈 목록으로 본다 (manifest 소스 파일과 다르다).
+- `statuses`는 manifest에 있으면 그것, 없으면 소스 중 처음으로 `statuses`가 있는 것을 쓴다.
+- CORS 안내는 fetch가 TypeError를 던지고 `location.protocol === 'file:'`일 때만 보여준다. 그 밖의 실패는 일반 오류 안내를 보여준다.
+
 ## 만드는 절차
 
 1. **대상 폴더 결정** — 사용자가 안 주면 `docs/status/` 제안.
@@ -124,7 +138,9 @@ flowchart TD
 ```
 ````
 
-뷰어가 Mermaid CDN으로 렌더한다(인터넷 필요). 오프라인이면 mermaid 번들을 폴더에 두고 스크립트 경로만 교체.
+뷰어가 Mermaid CDN(`mermaid@11.17.2`)으로 렌더한다(인터넷 필요). 오프라인이면 같은 버전의 mermaid 번들을 폴더에 두고 스크립트 경로만 교체.
+
+**뷰어가 지원하는 Markdown은 최소한이다:** `#`~`####` 제목, ```mermaid 펜스, 문단. 목록·표·굵게·링크·일반 코드펜스는 지원하지 않고 문단 텍스트로 그대로 나온다. 그래서 흐름 문서는 제목 + Mermaid + 짧은 문단으로 쓴다.
 
 ## 유지보수 워크플로우 (AI의 반복 작업)
 

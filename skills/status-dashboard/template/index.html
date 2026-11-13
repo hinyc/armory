@@ -19,6 +19,9 @@
     --prio-high-fg: #b91c1c; --prio-high-bd: #fecaca;
     --prio-med-fg: #b45309; --prio-med-bd: #fde68a;
     --prio-low-fg: #1d4ed8; --prio-low-bd: #bfdbfe;
+    --verify: #475569;
+    --err-bg: #fef2f2; --err-bd: #fca5a5; --err-fg: #991b1b; --err-dim: #b91c1c;
+    --err-code: #fee2e2;
   }
   [data-theme="dark"] {
     --bg: #0f172a; --panel: #1e293b; --panel2: #273449;
@@ -27,6 +30,9 @@
     --prio-high-fg: #fca5a5; --prio-high-bd: #7f1d1d;
     --prio-med-fg: #fcd34d; --prio-med-bd: #78350f;
     --prio-low-fg: #93c5fd; --prio-low-bd: #1e3a8a;
+    --verify: #cbd5e1;
+    --err-bg: #7f1d1d33; --err-bd: #7f1d1d; --err-fg: #fecaca; --err-dim: #fca5a5cc;
+    --err-code: #00000044;
   }
   * { box-sizing: border-box; }
   body {
@@ -85,7 +91,7 @@
   .tags { display: flex; gap: 6px; flex-wrap: wrap; }
   .tag { font-size: 11px; color: var(--muted); background: var(--panel2); padding: 2px 8px; border-radius: 6px; }
   .card .meta { color: var(--muted); font-size: 12px; margin-top: 4px; }
-  .card .verify { font-size: 13px; margin-top: 8px; color: #cbd5e1; }
+  .card .verify { font-size: 13px; margin-top: 8px; color: var(--verify); }
   .card .verify b { color: var(--muted); font-weight: 600; }
   .card .note { font-size: 13px; margin-top: 6px; color: var(--muted); }
   .tasks { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 4px; }
@@ -104,10 +110,11 @@
   .mermaid { background: var(--mermaid-bg); border-radius: 8px; padding: 12px; margin: 10px 0; }
 
   .error {
-    background: #7f1d1d33; border: 1px solid #7f1d1d; border-radius: 12px;
-    padding: 20px; color: #fecaca;
+    background: var(--err-bg); border: 1px solid var(--err-bd); border-radius: 12px;
+    padding: 20px; color: var(--err-fg);
   }
-  .error code { background: #00000044; padding: 2px 6px; border-radius: 4px; }
+  .error .detail { color: var(--err-dim); }
+  .error code { background: var(--err-code); padding: 2px 6px; border-radius: 4px; }
 </style>
 </head>
 <body>
@@ -120,7 +127,7 @@
   <div id="content"></div>
 </main>
 
-<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11.17.2/dist/mermaid.min.js"></script>
 <script>
 (async function () {
   const $ = (id) => document.getElementById(id);
@@ -129,7 +136,10 @@
 
   // ---- 테마 (라이트 기본 / 다크 토글, localStorage 저장) ----
   const THEME_KEY = "status-dashboard-theme";
-  let theme = localStorage.getItem(THEME_KEY) || "light";
+  // localStorage는 비공개 창·차단 설정에서 예외를 던질 수 있어 항상 감싼다
+  const readTheme = () => { try { return localStorage.getItem(THEME_KEY); } catch { return null; } };
+  const saveTheme = (t) => { try { localStorage.setItem(THEME_KEY, t); } catch { /* 저장 못 해도 동작 */ } };
+  let theme = readTheme() === "dark" ? "dark" : "light";
   function applyTheme(t) {
     document.documentElement.dataset.theme = t === "dark" ? "dark" : "";
     $("themeToggle").textContent = t === "dark" ? "☀️ 라이트" : "🌙 다크";
@@ -137,45 +147,98 @@
   applyTheme(theme);
   $("themeToggle").addEventListener("click", () => {
     theme = theme === "dark" ? "light" : "dark";
-    localStorage.setItem(THEME_KEY, theme);
+    saveTheme(theme);
     applyTheme(theme);
     renderFlows(); // Mermaid 다이어그램 테마 갱신
   });
 
-  // ---- 데이터 로드: manifest.json 우선, 없으면 data.json ----
-  async function loadJSON(path) {
+  // ---- 데이터 로드: manifest.json 우선, 없으면(404) data.json ----
+  class LoadError extends Error {}
+
+  // fetch 자체의 실패(TypeError)는 그대로 던지고, HTTP·JSON 문제는 LoadError로 던진다
+  async function getJSON(path) {
     const res = await fetch(path, { cache: "no-store" });
-    if (!res.ok) throw new Error(`${path}: ${res.status}`);
-    return res.json();
+    if (!res.ok) {
+      const err = new LoadError(`HTTP ${res.status}`);
+      err.status = res.status;
+      throw err;
+    }
+    try { return await res.json(); }
+    catch (e) { throw new LoadError(`JSON 파싱 실패 (${e.message})`); }
+  }
+
+  const isPlainObject = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
+  const badManifest = (reason) => new LoadError(`manifest.json 형식 오류: ${reason}`);
+
+  function validateSources(sources) {
+    if (!Array.isArray(sources) || !sources.length || !sources.every((s) => typeof s === "string" && s)) {
+      throw badManifest("sources는 비어 있지 않은 파일 이름 문자열 배열이어야 합니다");
+    }
+    const bad = sources.find((s) => /[\\/]/.test(s) || s.includes(".."));
+    if (bad !== undefined) throw badManifest(`sources의 "${bad}"에 /, \\, ..을 쓸 수 없습니다(같은 폴더의 파일 이름만)`);
+  }
+
+  // required: manifest 소스 파일은 issues 배열이 필수. 단일 data.json은 issues가 없으면 빈 목록(있는데 배열이 아니면 오류)
+  async function loadIssuesFile(name, required = true) {
+    let json;
+    try { json = await getJSON(name); }
+    catch (e) {
+      if (e instanceof LoadError) throw new LoadError(`${name}: ${e.message}`);
+      // 연결 실패(TypeError)는 CORS 안내 판정을 위해 TypeError로 유지하고 파일 이름만 붙인다
+      if (e instanceof TypeError) throw new TypeError(`${name}: ${e.message}`, { cause: e });
+      throw e;
+    }
+    if (!isPlainObject(json)) throw new LoadError(`${name}: 최상위가 객체가 아닙니다`);
+    if (json.issues === undefined && !required) return { ...json, issues: [] };
+    if (!Array.isArray(json.issues)) throw new LoadError(`${name}: issues가 배열이 아닙니다`);
+    return json;
+  }
+
+  async function loadManifest() {
+    try { return await getJSON("manifest.json"); }
+    catch (e) {
+      if (!(e instanceof LoadError)) throw e;
+      if (e.status === 404) return null;
+      throw badManifest(e.message);
+    }
   }
 
   async function loadData() {
-    let base;
-    try { base = await loadJSON("manifest.json"); }
-    catch { base = null; }
+    const manifest = await loadManifest();
+    if (manifest === null) return loadIssuesFile("data.json", false);
+    if (!isPlainObject(manifest)) throw badManifest("최상위가 객체가 아닙니다");
+    validateSources(manifest.sources);
+    const parts = await Promise.all(manifest.sources.map((n) => loadIssuesFile(n)));
+    const withStatuses = parts.find((p) => p.statuses);
+    return {
+      ...manifest,
+      issues: parts.flatMap((p) => p.issues),
+      statuses: manifest.statuses || withStatuses?.statuses,
+    };
+  }
 
-    if (base && Array.isArray(base.sources)) {
-      const parts = await Promise.all(base.sources.map(loadJSON));
-      const issues = parts.flatMap((p) => p.issues || []);
-      return { ...base, issues, statuses: base.statuses || parts[0]?.statuses };
-    }
-    return loadJSON("data.json");
+  function showLoadError(e) {
+    const corsLikely = e instanceof TypeError && location.protocol === "file:";
+    const help = corsLikely ? `
+        <p>이 페이지를 <code>file://</code>로 직접 열면 브라우저 보안 때문에
+        같은 폴더의 JSON을 읽지 못합니다(CORS).</p>
+        <p>이 폴더에서 아래 명령으로 로컬 서버를 띄운 뒤 접속하세요:</p>
+        <p><code>python3 -m http.server</code></p>
+        <p>또는 VS Code의 <em>Live Server</em> 확장으로 열면 됩니다.</p>`
+      : `
+        <p>같은 폴더의 JSON 파일과 서버 상태를 확인하세요.</p>`;
+    $("content").innerHTML = `
+      <div class="error">
+        <strong>데이터를 불러오지 못했습니다.</strong>${help}
+        <p class="detail">상세: ${esc(e.message)}</p>
+      </div>`;
   }
 
   let data;
   try {
     data = await loadData();
   } catch (e) {
-    $("content").innerHTML = `
-      <div class="error">
-        <strong>데이터를 불러오지 못했습니다.</strong>
-        <p>이 페이지를 <code>file://</code>로 직접 열면 브라우저 보안 때문에
-        같은 폴더의 JSON을 읽지 못합니다(CORS).</p>
-        <p>이 폴더에서 아래 명령으로 로컬 서버를 띄운 뒤 접속하세요:</p>
-        <p><code>python3 -m http.server</code></p>
-        <p>또는 VS Code의 <em>Live Server</em> 확장으로 열면 됩니다.</p>
-        <p style="color:#fca5a5cc">상세: ${esc(e.message)}</p>
-      </div>`;
+    showLoadError(e);
     return;
   }
 
@@ -187,8 +250,32 @@
     { key: "blocked", label: "막힘", color: "#ef4444" },
   ];
   const statuses = data.statuses?.length ? data.statuses : DEFAULT_STATUSES;
-  const statusMap = Object.fromEntries(statuses.map((s) => [s.key, s]));
+  // 키가 constructor 같은 프로토타입 이름이어도 안전하도록 프로토타입 없는 객체를 쓴다
+  const statusMap = Object.assign(Object.create(null),
+    Object.fromEntries(statuses.map((s) => [s?.key, s])));
   const issues = data.issues || [];
+
+  // ---- 입력 검증: 색상·링크 ----
+  const DEFAULT_COLOR = "#64748b";
+  const COLOR_RE = /^(#[0-9a-f]{3,8}|(rgb|hsl)a?\([0-9a-z\s.,%/+-]*\)|[a-z]+)$/i;
+  function safeColor(c) {
+    if (typeof c !== "string") return DEFAULT_COLOR;
+    const v = c.trim();
+    return COLOR_RE.test(v) && CSS.supports("color", v) ? v : DEFAULT_COLOR;
+  }
+  const SAFE_SCHEMES = ["http:", "https:", "mailto:"];
+  // 허용: http/https/mailto, 상대 경로. 그 외 스킴과 //host 형태는 링크로 쓰지 않는다
+  function safeHref(url) {
+    if (typeof url !== "string") return null;
+    const v = url.trim();
+    // 브라우저는 스킴 안의 공백·제어문자를 무시하므로 지우고 판정한다
+    const probe = v.replace(/[\u0000-\u0020\u007f]/g, "");
+    if (!probe) return null;
+    if (/^[\\/]{2}/.test(probe) || probe.startsWith("/\\")) return null;
+    const scheme = probe.match(/^([a-z][a-z0-9+.-]*):/i);
+    if (scheme) return SAFE_SCHEMES.includes(scheme[1].toLowerCase() + ":") ? v : null;
+    return v;
+  }
 
   $("project").textContent = data.project || "Status Dashboard";
   if (data.updated) $("updated").textContent = `업데이트: ${data.updated}`;
@@ -209,14 +296,14 @@
   const overall = issues.length
     ? issues.reduce((a, i) => a + progressOf(i), 0) / issues.length : 0;
 
-  const counts = {};
+  const counts = Object.create(null);
   for (const i of issues) counts[i.status] = (counts[i.status] || 0) + 1;
 
   $("content").innerHTML = `
     <div class="summary">
       ${statuses.map((s) => `
         <span class="chip">
-          <span class="dot" style="background:${esc(s.color)}"></span>
+          <span class="dot" style="background:${esc(safeColor(s.color))}"></span>
           ${esc(s.label)} <b>${counts[s.key] || 0}</b>
         </span>`).join("")}
       <span class="chip">전체 <b>${issues.length}</b></span>
@@ -244,18 +331,22 @@
 
   // ---- 카드 렌더 ----
   function cardHTML(issue) {
-    const st = statusMap[issue.status] || { label: issue.status, color: "#64748b" };
+    const st = statusMap[issue.status] || { label: issue.status, color: DEFAULT_COLOR };
     const p = progressOf(issue);
     const tasks = (issue.tasks || []).map((t) =>
       `<li class="${t.done ? "done" : ""}">${t.done ? "✓" : "○"} ${esc(t.text)}</li>`).join("");
     const tags = (issue.tags || []).map((t) => `<span class="tag">#${esc(t)}</span>`).join("");
-    const links = (issue.links || []).map((l) =>
-      `<a href="${esc(l.url)}" target="_blank" rel="noreferrer">${esc(l.label || l.url)}</a>`).join("");
+    const links = (issue.links || []).map((l) => {
+      const href = safeHref(l?.url);
+      const label = esc(l?.label || l?.url);
+      return href === null ? `<span>${label}</span>`
+        : `<a href="${esc(href)}" target="_blank" rel="noreferrer">${label}</a>`;
+    }).join("");
     return `
       <div class="card">
         <div class="top">
           ${issue.id != null ? `<span class="id">#${esc(issue.id)}</span>` : ""}
-          <span class="badge" style="background:${esc(st.color)}">${esc(st.label)}</span>
+          <span class="badge" style="background:${esc(safeColor(st.color))}">${esc(st.label)}</span>
           ${issue.priority ? `<span class="prio ${esc(issue.priority)}">${esc(issue.priority)}</span>` : ""}
           <span class="title">${esc(issue.title)}</span>
           <span class="tags">${tags}</span>
@@ -276,6 +367,7 @@
   }
 
   const prioRank = { high: 0, medium: 1, low: 2 };
+  const rankOf = (p) => (Object.hasOwn(prioRank, p) ? prioRank[p] : 9);
   function render() {
     const q = $("q").value.trim().toLowerCase();
     const fs = $("fstatus").value;
@@ -289,7 +381,7 @@
           ...(i.tasks || []).map((t) => t.text)].join(" ").toLowerCase();
         return hay.includes(q);
       })
-      .sort((a, b) => (prioRank[a.priority] ?? 9) - (prioRank[b.priority] ?? 9));
+      .sort((a, b) => rankOf(a.priority) - rankOf(b.priority));
     $("issues").innerHTML = filtered.length
       ? filtered.map(cardHTML).join("")
       : `<p style="color:var(--muted)">조건에 맞는 항목이 없습니다.</p>`;
@@ -300,24 +392,38 @@
   render();
 
   // ---- 흐름(Markdown + Mermaid) ----
+  // 마지막 호출만 화면에 반영한다(테마 연타·느린 fetch로 이전 실행이 덮어쓰지 않도록)
+  let flowRun = 0;
+  async function loadFlow(path) {
+    try {
+      const res = await fetch(path, { cache: "no-store" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return `<div class="flow-doc">${mdToHTML(await res.text())}</div>`;
+    } catch (e) {
+      return `<div class="flow-doc" style="color:var(--muted)">불러오기 실패: ${esc(path)} (${esc(e.message)})</div>`;
+    }
+  }
+
   async function renderFlows() {
-    const flows = data.flows || [];
+    const run = ++flowRun;
+    const flows = Array.isArray(data.flows) ? data.flows.filter((p) => typeof p === "string") : [];
     if (!flows.length) return;
     const host = $("flows");
-    host.innerHTML = `<h2>흐름 / 다이어그램</h2>`;
-    for (const path of flows) {
-      try {
-        const md = await (await fetch(path, { cache: "no-store" })).text();
-        host.insertAdjacentHTML("beforeend",
-          `<div class="flow-doc">${mdToHTML(md)}</div>`);
-      } catch {
-        host.insertAdjacentHTML("beforeend",
-          `<div class="flow-doc" style="color:var(--muted)">불러오기 실패: ${esc(path)}</div>`);
-      }
+    const docs = await Promise.all(flows.map(loadFlow));
+    if (run !== flowRun) return;
+    host.innerHTML = `<h2>흐름 / 다이어그램</h2>${docs.join("")}`;
+    if (!window.mermaid) {
+      host.insertAdjacentHTML("beforeend",
+        `<p style="color:var(--muted)">Mermaid 라이브러리를 불러오지 못해 다이어그램은 코드로 표시됩니다.</p>`);
+      return;
     }
-    if (window.mermaid) {
+    try {
       mermaid.initialize({ startOnLoad: false, theme: theme === "dark" ? "dark" : "default" });
-      await mermaid.run({ querySelector: ".mermaid" });
+      await mermaid.run({ nodes: host.querySelectorAll(".mermaid") });
+    } catch (e) {
+      if (run !== flowRun) return;
+      host.insertAdjacentHTML("beforeend",
+        `<p style="color:var(--muted)">다이어그램 렌더링 실패: ${esc(e?.message || e)}</p>`);
     }
   }
 

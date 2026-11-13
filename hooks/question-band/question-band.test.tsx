@@ -195,3 +195,67 @@ test('백그라운드 알림으로 시작된 턴은 질문으로 보지 않는�
   expect(await ui.find({ type: 'Text', text: /알림/ })).toBeUndefined()
   await ui.unmount()
 })
+
+test('M1: 이 mod 안에서 예외가 나도 아래 훅까지 prompt.submit이 전달된다', async ($, on) => {
+  let reached = 0
+  on('clock.now', () => {
+    throw new Error('boom')
+  })
+  on('prompt.submit', ($, e) => {
+    reached += 1
+    return { text: e.text }
+  })
+  const result = await $.prompt.submit(typed('질문'))
+  expect(result).toEqual({ text: '질문' })
+  expect(reached).toBe(1)
+})
+
+test('M1: 이 mod 안에서 예외가 나도 turn.start·turn.complete가 아래로 전달된다', async ($, on) => {
+  let reached = 0
+  on('clock.now', () => {
+    throw new Error('boom')
+  })
+  on('turn.start', ($, e) => {
+    reached += 1
+    return { turnId: e.turnId }
+  })
+  on('turn.complete', ($, e) => {
+    reached += 10
+    return { text: e.answer }
+  })
+  await $.turn.start({ text: '질문', turnId: 't1' })
+  await $.turn.complete(completeTurn('t1'))
+  expect(reached).toBe(11)
+})
+
+test('M2: 모델 요약이 예외를 던져도 원문 요약을 유지한다', async ($, on) => {
+  const clock = mock.clock(on)
+  on('ui.render', ($, e) => {
+    const { Box } = $.ui.resolve(e)
+    return <Box />
+  })
+  on('prompt.submit', ($, e) => ({ text: e.text }))
+  on('model.complete', () => {
+    throw new Error('model down')
+  })
+  await $.prompt.submit(typed(LONG_PROMPT))
+  await clock.settle()
+  const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  expect(await ui.find({ type: 'Text', text: /세 번 실패/ })).toBeDefined()
+  await ui.unmount()
+})
+
+test('M3: 앞 턴의 turn.complete는 아직 턴이 없는 새 질문을 완료로 바꾸지 않는다', async ($, on) => {
+  const clock = mock.clock(on)
+  engineBeneath(on)
+  await $.prompt.submit(typed('첫 질문'))
+  await $.turn.start({ text: '첫 질문', turnId: 't1' })
+  await $.prompt.submit(typed('두 번째 질문')) // 대기열: turnId 아직 없음
+  await clock.advance(3_000)
+  await $.turn.complete(completeTurn('t1'))
+  const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  expect(await ui.find({ type: 'Text', text: /두 번째 질문/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /경과/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /걸림/ })).toBeUndefined()
+  await ui.unmount()
+})

@@ -33,7 +33,8 @@ function loadEntries(filter) {
     .filter((name) => name.endsWith('.json'))
     .map((name) => JSON.parse(fs.readFileSync(path.join(dir, name), 'utf8')))
     .filter((entry) => !filter || entry.id.includes(filter))
-    .sort((a, b) => `${a.section}|${a.sortKey}`.localeCompare(`${b.section}|${b.sortKey}`))
+    // 로캘에 따라 달라지는 localeCompare 대신 코드 포인트 순서로 비교한다 (sortKey = 파일:줄:순번)
+    .sort((a, b) => (a.sortKey < b.sortKey ? -1 : a.sortKey > b.sortKey ? 1 : 0))
 }
 
 function sheetHtml(entries) {
@@ -65,15 +66,18 @@ async function main() {
   try {
     const page = await browser.newPage({ viewport: { width: 1640, height: 800 } })
     const sheets = chunk(entries, per)
-    for (const [index, group] of sheets.entries()) {
-      const htmlFile = path.join(REVIEW_DIR, '_sheet.html')
-      fs.writeFileSync(htmlFile, sheetHtml(group))
-      await page.goto(pathToFileURL(htmlFile).href)
-      await page.waitForLoadState('load')
-      const out = path.join(REVIEW_DIR, `${prefix}${String(index + 1).padStart(2, '0')}.png`)
-      await page.screenshot({ path: out, fullPage: true })
+    const htmlFile = path.join(REVIEW_DIR, '_sheet.html')
+    try {
+      for (const [index, group] of sheets.entries()) {
+        fs.writeFileSync(htmlFile, sheetHtml(group))
+        await page.goto(pathToFileURL(htmlFile).href)
+        await page.waitForLoadState('load')
+        const out = path.join(REVIEW_DIR, `${prefix}${String(index + 1).padStart(2, '0')}.png`)
+        await page.screenshot({ path: out, fullPage: true })
+      }
+    } finally {
+      fs.rmSync(htmlFile, { force: true })
     }
-    fs.rmSync(path.join(REVIEW_DIR, '_sheet.html'), { force: true })
     process.stdout.write(`[screen-spec:sheet] 캡처 ${entries.length}개 → ${path.relative(process.cwd(), REVIEW_DIR)}/${prefix}*.png (${sheets.length}장)\n`)
   } finally {
     await browser.close()

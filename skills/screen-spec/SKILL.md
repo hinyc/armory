@@ -29,7 +29,7 @@ description: Use when the user wants a screen design document (화면설계서, 
 - `e2e/screen-spec/`이 이미 있으면 구축 모드로 가지 않는다. 기존 스크립트를 덮어쓰지 않는다.
 - package.json에 같은 이름(`screen-spec*`)의 스크립트가 이미 있고 다른 구현을 가리키면, 덮어쓰지 말고 사용자에게 묻는다. 승인이 없으면 다른 이름을 쓴다.
   - 스크립트 이름: `ui-spec`, `ui-spec:only` …
-  - **출력 폴더도 함께 바꾼다**: `docs/screen-spec`을 다른 구현이 쓰고 있으면 `spec.config.ts`의 `outDir`을 `docs/ui-spec`으로 바꾸고, 스크립트의 삭제 경로·gitignore도 맞춘다. 같은 폴더를 쓰면 전체 실행이 다른 구현의 결과물을 지운다.
+  - **출력 폴더도 함께 바꾼다**: `docs/screen-spec`을 다른 구현이 쓰고 있으면 `SCREEN_SPEC_OUT_DIR`을 `docs/ui-spec`으로 정하고(`spec.config.ts`의 `outDir`도 같은 값), gitignore도 맞춘다. 삭제 경로는 위 스크립트처럼 `SCREEN_SPEC_OUT_DIR`을 따라간다 (규칙은 아래 `<OUT_DIR>` 규칙). 같은 폴더를 쓰면 전체 실행이 다른 구현의 결과물을 지운다.
 
 ## 템플릿
 
@@ -43,16 +43,16 @@ description: Use when the user wants a screen design document (화면설계서, 
 | `e2e/screen-spec/support/*` | 목 API, 캡처, 데이터 검증, HTML 생성, 리포터 | 안 함 |
 | `e2e/screen-spec/state.json` | 업데이트 기준 커밋(`lastBuiltCommit`), 하네스 밖 의존 경로(`harnessDeps`) | 에이전트가 갱신 |
 | `e2e/screen-spec/affected.mjs` | 업데이트 모드: 바뀐 파일 → 영향받는 캡처 | 안 함 |
-| `e2e/screen-spec/contact-sheet.mjs` | 스샷 검토용 모아 보기 이미지 생성 | 안 함 |
+| `e2e/screen-spec/contact-sheet.mjs` | 스샷 검토용 모아 보기 이미지 생성 (섹션과 상관없이 시나리오 소스 순서, 즉 `sortKey` 순) | 안 함 |
 | `e2e/screen-spec/annotations/*.json` | 좌표를 직접 적는 박스·번호·화살표·잘라내기 (템플릿에는 없음) | 필요할 때 만듦 |
-| `e2e/screen-spec/example.screen.ts` | 시나리오 예시 | 참고 후 삭제 |
+| `e2e/screen-spec/example.screen.ts` | 시나리오 예시 | 예시 파일(이 앱에 없는 화면을 찍어 그대로 두면 실패). 실제 화면 스크립트를 만든 뒤 삭제 |
 | `external.example/` | 외부 데이터 예시 | 외부 폴더로 복사해 씀 |
 
 package.json에 추가할 스크립트:
 
 ```json
 {
-  "screen-spec": "node -e \"fs.rmSync('docs/screen-spec',{recursive:true,force:true})\" && playwright test -c playwright.screen-spec.config.ts",
+  "screen-spec": "node -e \"const p=require('path');const v=process.env.SCREEN_SPEC_OUT_DIR;const d=p.resolve(v??'docs/screen-spec');if((v!==undefined&&['','/'].includes(v.trim()))||!d.startsWith(process.cwd()+p.sep)){console.error('SCREEN_SPEC_OUT_DIR가 비었거나 레포 밖이다: '+d);process.exit(1)}fs.rmSync(d,{recursive:true,force:true})\" && playwright test -c playwright.screen-spec.config.ts",
   "screen-spec:only": "playwright test -c playwright.screen-spec.config.ts",
   "screen-spec:html": "playwright test -c playwright.screen-spec-html.config.ts --pass-with-no-tests",
   "screen-spec:affected": "node e2e/screen-spec/affected.mjs",
@@ -60,10 +60,11 @@ package.json에 추가할 스크립트:
 }
 ```
 
+- **`<OUT_DIR>` 규칙**: 이 스킬 문서의 `<OUT_DIR>`은 `SCREEN_SPEC_OUT_DIR` 환경변수다. 값이 없으면 `docs/screen-spec`을 쓰고, 값이 빈 문자열·공백뿐인 값·`/`(` / `처럼 앞뒤 공백 포함)·`.`(레포 자체)·레포 밖 경로면 지우지 않고 멈추고, 레포 안 하위 폴더만 쓴다 (위 스크립트와 `spec.config.ts`가 같은 규칙이다). 전체 실행은 이 폴더를 지운다. 환경변수를 바꿨으면 gitignore와 아래 `docs/screen-spec` 표기도 그 폴더로 읽는다.
 - pnpm 10 이상에서 의존성 상태 검사 때문에 스크립트 실행이 막히면 `node_modules/.bin/playwright ...`로 직접 실행한다.
 
 - `screen-spec:only <파일>`은 일부 시나리오만 다시 찍는다. 기존 결과를 지우지 않아서, 삭제·이름을 바꾼 캡처의 옛 결과가 남는다. 마무리는 항상 `screen-spec`(전체)로 한다.
-- 결과물: `docs/screen-spec/` (`index.html`, `shots/`, `data/`, `annotated/`, `report.json`). gitignore에 넣는다.
+- 결과물: `docs/screen-spec/` (`index.html`, `shots/`, `data/`, `annotated/`, `report.json`). gitignore에 넣는다. 실행 중에는 `.run/<runId>/`(캡처 id 중복 표식)가 생기고 리포터가 시작·끝에 지운다.
 
 ## 구축 모드
 
@@ -107,15 +108,16 @@ package.json에 추가할 스크립트:
 2. **뼈대 설치**
    - `template/`을 복사하고 `spec.config.ts`를 채운다. `sections`는 1번 표의 섹션 순서대로 쓴다.
    - package.json 스크립트를 추가하고 `docs/screen-spec`을 gitignore에 넣는다.
-   - 외부 데이터 폴더를 정한다(기본 `~/Documents/<프로젝트>-screen-spec`, 환경변수 `SCREEN_SPEC_SOURCE_DIR`로 바꿀 수 있다).
+   - 외부 데이터 폴더를 정한다(기본 `~/Documents/<프로젝트>-screen-spec`, 환경변수 `SCREEN_SPEC_SOURCE_DIR`가 있으면 그것이 우선한다. `<프로젝트>`는 현재 폴더 이름이고, 비면 `project`다).
+   - dev 서버 포트는 환경변수 `SCREEN_SPEC_PORT`(1~65535 정수, 기본 5173)로 바꾼다. 아닌 값이면 오류로 멈춘다.
 3. **인증과 공통 목**
    - 로그인이 필요하면 아래 중 하나로 우회하고, 이유를 주석으로 남긴다.
      - setup 프로젝트에서 storageState 만들기
      - `addInitScript`로 토큰 심기
      - 테스트용 환경변수
-   - 모든 화면이 부르는 API(사용자 정보, 메뉴, 설정)는 `fixtures/common.ts`에 모아 매 테스트 처음에 등록한다.
+   - 모든 화면이 부르는 API(사용자 정보, 메뉴, 설정)는 `e2e/screen-spec/fixtures/common.ts`에 모아 매 테스트 처음에 등록한다.
 4. **섹션별 반복** (한 번에 한 섹션)
-   - 화면이 실제로 부르는 API를 코드에서 찾아 `fixtures/<area>.ts`에 빌더(`buildX(overrides)`)로 만든다.
+   - 화면이 실제로 부르는 API를 코드에서 찾아 `e2e/screen-spec/fixtures/<area>.ts`에 빌더(`buildX(overrides)`)로 만든다.
    - 응답 모양은 타입 정의나 API 클라이언트 코드에서 가져온다.
    - `<area>.screen.ts`를 작성한다. 패턴은 `example.screen.ts`와 `references/state-recipes.md`를 따른다.
    - 실행: `pnpm screen-spec:only e2e/screen-spec/<area>.screen.ts`
@@ -123,7 +125,7 @@ package.json에 추가할 스크립트:
      - 목 누락 → 목을 추가한다.
      - 셀렉터 → 화면 코드를 다시 읽는다.
      - 콘솔 에러 → 원인을 확인한다. 정말 무관한 소음일 때만 이유를 적어 `consoleAllow`에 넣는다.
-   - **테스트 통과가 곧 정상은 아니다.** `pnpm screen-spec:sheet`로 모아 보기 이미지(`docs/screen-spec/review/sheet-*.png`)를 만들어 전부 눈으로 확인한다.
+   - **테스트 통과가 곧 정상은 아니다.** `pnpm screen-spec:sheet`로 모아 보기 이미지(`<OUT_DIR>/review/sheet-*.png`)를 만들어 전부 눈으로 확인한다.
      - 빈 차트, 로딩 스피너만 찍힘, 이전 캡처의 툴팁·다이얼로그가 남음 → 기다리는 조건이나 시계 방식을 고친다.
      - 의심되는 장은 원본 `shots/<id>.png`를 열어 확인한다.
 5. **설명 작성**
@@ -141,7 +143,7 @@ package.json에 추가할 스크립트:
    - 섹션별 `:only`에서는 통과했는데 전체 실행에서만 시간 초과가 나면 dev 서버 첫 컴파일 탓이다. 템플릿의 `expect.timeout`(15초)을 줄이지 말고, 페이지 첫 기다림은 화면 뼈대(제목·표 머리글)로 한다.
    - `tsc --noEmit`(프로젝트 tsconfig)을 실행해 하네스가 타입 오류를 만들지 않았는지 확인한다.
    - 모아 보기 이미지를 다시 만들어 전체를 한 번 더 훑는다.
-   - `docs/screen-spec/index.html`을 열어 사용자와 검토한다. 문구 수정 요청은 시나리오의 description을 고친다.
+   - `<OUT_DIR>/index.html`을 열어 사용자와 검토한다. 문구 수정 요청은 시나리오의 description을 고친다.
    - 검토가 끝나면 커밋을 제안한다. 커밋한 뒤 그 해시를 `state.json`의 `lastBuiltCommit`에 써서 다음 커밋에 넣는다. `state.json` 변경은 영향 분석에서 제외되므로 이 후속 커밋이 다음 업데이트에 잡히지 않는다.
    - `lastBuiltCommit`이 비어 있으면 `affected`가 `e2e/screen-spec/`을 처음 추가한 커밋을 기준으로 쓴다.
 
@@ -153,7 +155,7 @@ package.json에 추가할 스크립트:
 
 ## 업데이트 모드
 
-1. **변경 범위 찾기**: `pnpm screen-spec:affected`를 실행한다(기준: `state.json`의 `lastBuiltCommit`, 인자로 다른 커밋을 넘길 수 있다).
+1. **변경 범위 찾기**: `pnpm screen-spec:affected`를 실행한다(기준: `state.json`의 `lastBuiltCommit`, 인자로 기준 ref 하나만 넘길 수 있다. `-`로 시작하거나 ref에 쓸 수 없는 문자가 있으면 오류). 이름이 바뀐 파일은 옛 경로·새 경로 둘 다 바뀐 것으로 센다.
    - `affected`: 소스가 바뀐 캡처
    - `uncovered`: 어느 캡처의 source에도 없는 바뀐 파일. 새 화면이거나 source 누락일 수 있다.
    - `harnessChanged`: 바뀐 fixtures·공통 목·Playwright 설정·`harnessDeps` 경로. 이 파일을 쓰는 시나리오를 다시 돌린다.
@@ -185,7 +187,7 @@ package.json에 추가할 스크립트:
 - 레포 밖에 두는 이유:
   - 고객 요구사항 원문을 레포에 커밋하지 않는다.
   - 다시 캡처해도 사람이 고친 내용이 지워지지 않는다.
-- 파일이 없으면 조용히 넘어간다(요구사항 기능을 안 쓰는 프로젝트는 아무것도 만들 필요 없다). 형식이 틀리면 파일 이름과 위치를 담아 생성을 중단한다.
+- 파일이 없을 때(ENOENT)만 조용히 넘어간다(요구사항 기능을 안 쓰는 프로젝트는 아무것도 만들 필요 없다). 형식이 틀리거나 그 밖의 읽기 오류면 파일 이름을 담아 생성을 중단한다.
 
 ## 하지 말 것
 

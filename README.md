@@ -90,7 +90,7 @@ war-room/
 ├─ DECISIONS.md      # 결정 로그 (쌓임)
 ├─ LESSONS.md        # 시행착오·롤 문서 개선 후보 (반영하면 비움)
 ├─ archive/
-└─ .eval/            # 상 등급의 평가 진행 파일 (커밋 안 함)
+└─ .eval/            # 평가 진행 파일·스냅숏 (중·상, 커밋 안 함)
 ```
 
 ```json
@@ -105,7 +105,7 @@ war-room/
 
 - `war-room-guard` mod가 `war-room/`이 켜진 프로젝트의 시스템 프롬프트에 "먼저 담당 롤을 찾는다" 지침을 넣는다. config의 `enabled: false`면 빠진다.
 - 판정은 구현한 에이전트가 아닌 별도 에이전트가 한다. 기본 `evaluator` 롤이 (상 등급만) 기준·히스토리(DECISIONS·LESSONS·git log)·부작용(전체 테스트)·개념(conceptpowers)·수치(3번 잰 중앙값, 한계값 초과 실패, 10% 넘게 나빠지면 알림) 다섯 갈래로 평가한다. 중 등급은 평가 롤이 켜져 있어도 다섯 갈래·평가 계획 없이 `haiku` 에이전트가 기준별 판정만 한다 (수치 확인은 기준 하나). 위반은 실패로 보고 다시 맡긴다.
-- 일마다 위험도 등급(하·중·상)을 정해 검증 비용을 나눈다. 하(동작이 안 바뀌는 오타·문구 등)는 기계 검사만, 중은 `haiku` 검증 에이전트의 기준별 판정, 상(릴리즈·push, 지침·롤 수정, 병렬, 5개 이상 변경, 삭제·보안 등)은 기준 검토와 사람 승인까지 한다. 롤 없는 일도 하 등급만 매니저가 직접 하고, 나머지는 조사·작업 에이전트에 맡긴다.
+- 일마다 위험도 등급(하·중·상)을 정해 검증 비용을 나눈다. 하(검증 신호가 없는 일. 문구만 바꾸는 일은 파일 수와 상관없이 하이다. 매니저가 직접 하는 예외는 `verify-loop.md` 1절)는 기계 검사만, 중은 `haiku` 검증 에이전트의 기준별 판정, 상(릴리즈·push, 등급·검증 흐름 변경, 병렬, 검증 신호가 있는 변경 5개 이상, 파일 삭제·보안 등)은 기준 검토(평가 롤이 켜져 있으면 평가 계획 ①을 맡은 에이전트가 함께, 꺼졌거나 없으면 새 검증 에이전트가)와 사람 승인까지 한다. 롤 없는 일도 하 등급만 매니저가 직접 하고, 나머지는 조사·작업 에이전트에 맡긴다.
 - 매니저는 되돌릴 수 있는 결정(기준 초안, 접근 고르기 등)은 묻지 않고 정해 `정한 것:`으로 알리고 진행한다. 되돌리기 어려운 결정(커밋·push, 삭제, 공개 인터페이스 변경, 요청 뜻이 갈리는 것 등)만 사용자에게 묻는다. 정한 결정은 STATUS `점검할 결정`에 남기고 평가·검증 에이전트가 점검한다 (등급과 별개).
 - 위임 프롬프트는 고정 칸(목표·범위·범위 밖·관련 파일·요구 기준·알려진 예외·관련 결정·기준선·공유 약속·지난 시도)으로 쓰고, 보고에는 `가정한 것`·`모호했던 것`이 들어간다. 같은 일이 2번 실패하면 기준·설계를 다시 본다.
 - 판정은 플러그인의 읽기 전용 `armory:evaluator` 에이전트(`agents/evaluator.md`, Read·Grep·Glob·Bash·Skill만)가 한다. Bash로 파일을 쓸 수 있어 평가 전후 `git status`·`git diff` 스냅숏을 비교하고, 다르면 그 평가는 무효다. 저장소 밖 변경은 못 잡는다.
@@ -145,9 +145,11 @@ skills/<name>/
 └─ template/            # 대상 프로젝트에 복사되는 파일
 hooks/
 ├─ hooks.json           # 진입점 register.ts 하나를 가리킴
-├─ register.ts          # question-band와 war-room-guard를 함께 등록
+├─ register.ts          # question-band, eval-band, war-room-guard를 함께 등록
 ├─ question-band/       # mod 구현 + 테스트
+├─ eval-band/           # mod 구현 + 테스트
 └─ war-room-guard/      # mod 구현 + 테스트
+agents/evaluator.md     # war-room 읽기 전용 평가 에이전트
 types/index.d.ts        # mod 타입 선언
 ```
 
@@ -155,7 +157,7 @@ types/index.d.ts        # mod 타입 선언
 
 ```sh
 # 로컬 플러그인으로 세션 열기
-claude --plugin-dir ~/Documents/GitHub/armory
+claude --plugin-dir <armory 클론 경로>
 
 # 매니페스트·스킬 검증
 claude plugin validate .

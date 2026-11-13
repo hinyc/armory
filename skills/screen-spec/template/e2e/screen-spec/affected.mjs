@@ -48,13 +48,24 @@ function firstHarnessCommit() {
   return commits.at(-1) ?? ''
 }
 
+/** 인자는 커밋 이름 하나만. git 옵션처럼 읽히는 값(`-`로 시작)이나 공백·제어문자는 거부한다. */
+function readBaseArg(argv) {
+  if (argv.length > 1) throw new Error(`인자는 기준 커밋 하나만 받습니다: ${argv.join(' ')}`)
+  const [arg] = argv
+  if (arg === undefined) return undefined
+  if (arg.startsWith('-') || !/^[\w./~^@{}:+-]+$/.test(arg)) {
+    throw new Error(`기준 커밋 이름이 올바르지 않습니다: ${JSON.stringify(arg)}`)
+  }
+  return arg
+}
+
 function resolveBase(state) {
-  const base = process.argv[2] ?? (state.lastBuiltCommit || firstHarnessCommit())
+  const base = readBaseArg(process.argv.slice(2)) ?? (state.lastBuiltCommit || firstHarnessCommit())
   if (!base) {
     throw new Error(`기준 커밋이 없습니다. 인자로 넘기거나 ${STATE_FILE}의 lastBuiltCommit을 채우세요.`)
   }
   try {
-    git(['rev-parse', '--verify', '--quiet', `${base}^{commit}`])
+    git(['rev-parse', '--verify', '--quiet', `${base}^{commit}`, '--'])
   } catch {
     throw new Error(`커밋을 찾을 수 없습니다: ${base}`)
   }
@@ -62,8 +73,9 @@ function resolveBase(state) {
 }
 
 function changedFiles(base) {
-  const committed = git(['diff', '--name-only', '--relative', `${base}..HEAD`])
-  const working = git(['diff', '--name-only', '--relative', 'HEAD'])
+  // --no-renames: 이름이 바뀐 파일을 새 경로 하나로 합치지 않고 옛 경로(삭제)와 새 경로(추가) 둘 다 낸다
+  const committed = git(['diff', '--name-only', '--no-renames', '--relative', `${base}..HEAD`, '--'])
+  const working = git(['diff', '--name-only', '--no-renames', '--relative', 'HEAD', '--'])
   const untracked = git(['ls-files', '--others', '--exclude-standard'])
   return [...new Set([...committed, ...working, ...untracked])]
     .filter((file) => file !== STATE_FILE)

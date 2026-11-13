@@ -83,9 +83,10 @@ function matchesPattern(pattern: string, key: string): boolean {
 export function findHandler(table: MockTable, key: string): MockHandler | undefined {
   const normalized = normalizeKey(key)
   const entries = Object.entries(table).map(([pattern, handler]) => [normalizeKey(pattern), handler] as const)
-  const exact = entries.find(([pattern]) => pattern === normalized)
+  const exact = entries.filter(([pattern]) => pattern === normalized).at(-1)
   if (exact) return exact[1]
-  const param = entries.find(([pattern]) => pattern.includes('/:') && matchesPattern(pattern, normalized))
+  // :param 패턴이 여러 개 맞으면 나중에 등록한 것이 이긴다
+  const param = entries.filter(([pattern]) => pattern.includes('/:') && matchesPattern(pattern, normalized)).at(-1)
   return param?.[1]
 }
 
@@ -114,7 +115,11 @@ export async function installMockApi(page: Page, apiPattern: string): Promise<Mo
 
   return {
     register: (next) => {
-      table = { ...table, ...next }
+      // 키를 정규화해 "get /api/x/"와 "GET /api/x"를 같은 키로 본다.
+      // 다시 등록한 키는 뒤로 옮겨 나중에 등록한 것이 이기게 한다 (findHandler는 뒤쪽을 우선한다).
+      const normalized = Object.fromEntries(Object.entries(next).map(([key, handler]) => [normalizeKey(key), handler]))
+      const kept = Object.entries(table).filter(([key]) => !Object.hasOwn(normalized, key))
+      table = { ...Object.fromEntries(kept), ...normalized }
     },
     unmatched: () => misses,
   }

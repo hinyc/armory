@@ -1,16 +1,17 @@
 // 평가 진행 띠 그리기: 평가 블록(롤마다 하나)을 위에, 아래 그림(질문 띠 등)을 그 밑에 쌓는다.
 import type { EngineInterface, RenderElement, RenderInput } from 'claude-code'
 
-import { runText, STATUS_MARK, type EvalProgress, type EvalRun } from './progress'
+import { runText, STATUS_MARK, type EvalEntry, type EvalRun } from './progress'
 
 const NARROW_COLUMNS = 70
 
-const runMark = (run: EvalRun): string => (run.verdict === 'pass' ? STATUS_MARK.pass : STATUS_MARK.fail)
+const runMark = (run: EvalRun): string =>
+  run.verdict === 'pass' ? STATUS_MARK.pass : run.verdict === 'fail' ? STATUS_MARK.fail : STATUS_MARK.na
 
 export function drawEvalBand(
   $: EngineInterface,
   e: RenderInput,
-  list: readonly EvalProgress[],
+  list: readonly EvalEntry[],
   beneath: RenderElement | null,
 ): RenderElement {
   if (list.length === 0) return beneath as RenderElement
@@ -21,12 +22,12 @@ export function drawEvalBand(
     const label = current.state === 'planning' ? '계획' : `시도 ${current.attempt}`
     const focus = current.focus !== undefined && current.focus !== '' ? ` ${current.focus}` : ''
     return (
-      <Box flexDirection="column">
+      <Box key={p.id ?? `${p.role}:${p.task}`} flexDirection="column">
         <Text wrap="truncate-end" bold>
           {`⚖ 평가 · ${p.role} · ${p.task}`}
         </Text>
         {previous !== undefined ? (
-          <Text wrap="truncate-end" dimColor>
+          <Text key="previous" wrap="truncate-end" dimColor>
             {`  이전 (시도 ${previous.attempt}) ${runMark(previous)}  ${runText(previous, compact)}`}
           </Text>
         ) : null}
