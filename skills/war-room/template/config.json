@@ -1,5 +1,6 @@
 {
   "enabled": true,
+  "templateVersion": 2,
   "maxAttempts": 3,
   "suggestRoles": true,
   "roles": {

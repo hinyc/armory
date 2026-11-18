@@ -114,6 +114,8 @@ war-room/
 - 사용자가 "될 때까지"처럼 지시하면 상한을 무시하고 접근을 바꿔 가며 계속 반복한다.
 - 자주·길게·참고할 것이 많은 일은 새 롤·분리를, 롤에 같은 지시·맥락이 반복되면 그 롤 문서 갱신을 제안한다. 이 제안은 `suggestRoles: false`로 끈다.
 - 작업 로그는 따로 남기지 않는다. 변경 이력은 git에 맡긴다.
+- 여러 세션을 나눠 쓸 때는 한 세션이 감독을 맡는다. 지시(`[감독 지시]`)·보고(`[작업 보고]`)는 고정 칸으로 주고받고, 작업 세션은 자기 war-room 롤로 일하고 판정한다. 감독은 공유 약속 일치·통합 검증·보안 같은 교차 관심사만 판정을 맡기고, 되돌리기 어려운 결정은 사용자만 승인한다. 연결 워크트리 작업 세션은 `war-room/` 문서를 쓰지 않는다. 감독은 보고마다 기계 확인(HEAD·판정 근거 대조)만 하고 평가 에이전트는 정해진 때(공유 약속 영향, 상 등급 단계 끝, 통합 검증, 머지 관문)에만 띄운다 (`references/multi-session.md`, 작업 세션은 `references/work-session.md`).
+- 플러그인을 업데이트한 뒤 war-room을 쓰면, 프로젝트 config의 `templateVersion`이 스킬 템플릿보다 낮을 때 반영할지 한 번 묻는다. 비교는 세션당 한 번이고, 비교·반영은 `scripts/upgrade.py`가 해서 매니저는 요약만 읽는다. 반영하면 기본 롤 문서의 `# 프로젝트별 규칙` 위쪽과 빠진 config 키·STATUS 절만 바꾸고, 프로젝트별 규칙과 사용자가 만든 롤은 그대로 둔다. "war-room 업데이트"로 직접 부를 수도 있다 (`references/upgrade.md`).
 
 ## question-band
 
@@ -168,6 +170,7 @@ claude plugin test .
 
 - 스킬을 고친 뒤 열려 있는 세션에 반영하려면 `/reload-plugins`를 실행한다.
 - 커밋 메시지는 `commit` 스킬 형식(`<type>: <한글 제목>`)을 따른다.
+- `skills/war-room/template/` 아래 파일을 바꾸면 `template/config.json`의 `templateVersion`을 1 올린다. 설치된 프로젝트에 반영 질문이 뜨는 기준이다. 기본 롤 템플릿을 바꿨으면 커밋 뒤 `python3 skills/war-room/template-history/build.py`로 지난 문장 목록도 다시 만든다.
 - 스킬은 특정 프로젝트·회사 용어 없이 일반화해서 쓴다. 예시는 중립 도메인(쇼핑몰, 관리자 화면)을 쓴다.
 
 ## License

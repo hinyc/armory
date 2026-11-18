@@ -1,6 +1,6 @@
 ---
 name: war-room
-description: Use BEFORE starting any task in a project that has a war-room/ folder at its root — check whether an enabled role agent owns the work and hand it to that agent instead of doing it yourself or jumping straight to another skill. Also use when the user wants to set up or manage role-based agents ("war-room", "워룸", "에이전트 팀", "에이전트 관리", "롤 추가", "역할 추가", "담당 에이전트", "롤 끄기", "롤 분리", "롤 업데이트", "지금 상황", "결정 로그"). A manager role routes each request to the owning role, runs it as a subagent, verifies the result with a separate agent and re-assigns until it meets the required bar (or stops and reports alternatives), and keeps the state documents up to date. Roles and on/off switches live in war-room/config.json; current state, decisions and lessons live in STATUS.md, DECISIONS.md and LESSONS.md.
+description: Use BEFORE starting any task in a project that has a war-room/ folder at its root — check whether an enabled role agent owns the work and hand it to that agent instead of doing it yourself or jumping straight to another skill. Also use when the user wants to set up or manage role-based agents ("war-room", "워룸", "에이전트 팀", "에이전트 관리", "롤 추가", "역할 추가", "담당 에이전트", "롤 끄기", "롤 분리", "롤 업데이트", "지금 상황", "결정 로그"), a session supervises others or gets a `[감독 지시]`/`[작업 보고]` message ("감독 세션"), or the plugin template was updated ("war-room 업데이트"). A manager role routes each request to the owning role, runs it as a subagent, verifies the result with a separate agent and re-assigns until it meets the required bar (or stops and reports alternatives), and keeps the state documents up to date. Roles and on/off switches live in war-room/config.json; current state, decisions and lessons live in STATUS.md, DECISIONS.md and LESSONS.md.
 ---
 
 # War Room (롤 에이전트 관리)
@@ -17,7 +17,7 @@ description: Use BEFORE starting any task in a project that has a war-room/ fold
 
 ```
 war-room/
-├─ config.json        # 전체·롤별 on/off
+├─ config.json        # 전체·롤별 on/off, 템플릿 버전
 ├─ roles/
 │  ├─ manager.md      # 기본 롤. 배정·검토·문서 정리
 │  ├─ evaluator.md    # 기본 롤. 평가 실행은 상 등급 (끄기·삭제 가능)
@@ -40,6 +40,7 @@ war-room/
 ```json
 {
   "enabled": true,
+  "templateVersion": 2,
   "maxAttempts": 3,
   "suggestRoles": true,
   "roles": {
@@ -57,6 +58,8 @@ war-room/
 | `maxAttempts` | 한 일에 시도할 최대 횟수 (기본 3). 사용자가 일마다 따로 정할 수 있고, "될 때까지" 같은 뜻의 지시가 있으면 무시한다 |
 | `suggestRoles` | 롤 제안(새 롤·분리·기존 롤 갱신) 스위치 (기본 `true`). `false`면 신호를 쌓지도 묻지도 않는다 |
 | `roles.<id>` | 롤 스위치. `false`면 배정 후보에서 뺀다. 롤 파일은 지우지 않는다 |
+| `templateVersion` | 이 프로젝트에 반영된 템플릿 버전 (없으면 1). 스킬 템플릿 값과 다르면 반영을 묻는다 (`references/upgrade.md`) |
+| `skipTemplateVersion` | 사용자가 "이 버전은 묻지 않기"를 고른 템플릿 버전. 템플릿이 이보다 올라가면 다시 묻는다 |
 
 - on/off 값이 없으면 `true`로 본다. 롤을 추가할 때 config에 `true`로 넣는다.
 - `roles/`에 파일은 있는데 config에 없는 롤은 켜진 것으로 보고, config에 `true`로 추가했다고 알린다.
@@ -70,6 +73,9 @@ war-room/
 |---|---|---|
 | 설치 | `war-room/`이 없고 사용자가 만들자고 할 때 | 아래 "설치" |
 | 롤 관리 | "롤 추가", "frontend 꺼줘", "롤 정리" | 아래 "롤 관리" |
+| 업데이트 | 템플릿 버전이 프로젝트보다 높을 때(배정 1번), "war-room 업데이트" | `references/upgrade.md` |
+| 감독 | 다른 세션을 지휘하라고 맡았을 때, `[작업 보고]`를 받았을 때 | `references/multi-session.md`. 세션 안의 롤 배정은 아래 "배정" 그대로 |
+| 작업 세션 | `[감독 지시]`를 받았을 때 | `references/work-session.md`만 읽고 아래 "배정"으로 |
 | 배정 (기본) | `war-room/`이 있는 프로젝트에서 일을 받았을 때 | 아래 "배정" |
 
 `war-room/`이 없는 프로젝트에서 일반 작업을 받았으면 이 스킬을 쓰지 않는다.
@@ -107,6 +113,8 @@ war-room/
 1. **설정 읽기**
    - `war-room/config.json`을 읽는다. `enabled: false`면 여기서 멈추고 평소처럼 일한다.
    - `roles/manager.md`를 읽는다. 매니저는 이 파일의 규칙을 따른다.
+   - 세션에서 처음 배정할 때 한 번만 config `templateVersion`(없으면 1)을 이 스킬 `template/config.json` 값과 비교한다. 프로젝트가 낮으면 요청을 시작하기 전에 스크립트로 비교해 반영할지 묻는다 (`references/upgrade.md` 2절).
+   - `[감독 지시]`로 시작하는 요청이면 `references/work-session.md`대로 받고 보고한다. 연결 워크트리에서 돌면 7번 문서 갱신을 하지 않는다.
    - `STATUS.md`를 읽어 진행 중인 일과 이어지는지 본다. 관련 있으면 `DECISIONS.md`에서 해당 결정을 찾아본다. `(검증 대기)` 항목은 확정된 결정으로 읽지 않는다.
    - `점검할 결정`에 이미 끝난 일의 항목이 남아 있으면 `references/judgment.md` 4절대로 처리한다.
 2. **담당 찾기** (다른 일보다 먼저. 파일을 읽거나 계획을 세우거나 다른 스킬을 쓰기 전에 한다)
@@ -231,3 +239,5 @@ war-room/
 - 롤 파일·config를 사용자 확인 없이 크게 바꾸기 (켜고 끄기는 예외. 롤 문서에 교훈을 넣는 것은 승인을 받는다)
 - 서브에이전트에게 `war-room/` 문서를 쓰게 하기 (진행 파일 제외)
 - 하 등급 일을 끝내고 `git diff` 사후 점검(검증 신호·무조건 상 조건)을 건너뛰기
+- 템플릿 반영을 묻지 않고 프로젝트 `war-room/` 파일을 고치기, `# 프로젝트별 규칙` 절과 사용자가 만든 롤을 템플릿으로 덮기
+- 감독 세션이 사용자 대신 되돌리기 어려운 결정을 승인하기 (`references/multi-session.md` 7절)
