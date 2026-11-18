@@ -33,7 +33,7 @@
 |---|---|---|
 | `roles/manager.md` | `# 프로젝트별 규칙` 제목 위 전부 (frontmatter 포함) | `# 프로젝트별 규칙` 절 전체 |
 | `roles/evaluator.md` (있을 때만) | 같음 | `# 프로젝트별 규칙` 절, frontmatter `model` 값 |
-| `config.json` | 템플릿에만 있는 키 추가, `templateVersion` | 이미 있는 키의 값, `roles` 전체 |
+| `config.json` | 템플릿에만 있는 키 추가, `templateVersion`. 이전 규칙: 프로젝트 `templateVersion`(없으면 1)이 4보다 낮고 `maxAttempts`가 3이면 1로 바꾼다 (`check`가 `maxAttempts 3 → 1`로 보인다). 한계: 옛 기본값 3과 사용자가 일부러 적은 3을 구분하지 않고 1로 바꾼다. 원래 값을 쓰려면 반영 뒤 다시 적는다 | 이미 있는 키의 값(위 이전 규칙 제외, 3이 아닌 `maxAttempts`와 4 이상 프로젝트는 그대로), `roles` 전체 |
 | `STATUS.md` | 빠진 `## ` 절을 템플릿 순서 자리에 `- 없음`으로 추가, 절 제목 괄호 설명 | 모든 절의 내용 |
 | 프로젝트 `.gitignore` | `war-room/.eval/` 줄이 없으면 추가 | 나머지 |
 | 사용자가 만든 롤, `DECISIONS.md`·`LESSONS.md` | 바꾸지 않는다 | 전부 |

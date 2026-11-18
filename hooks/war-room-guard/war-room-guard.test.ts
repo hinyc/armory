@@ -1,6 +1,7 @@
 import { expect, test } from 'claude-code/testing'
 import type { Engine } from 'claude-code/testing'
 import type { On } from 'claude-code'
+import { guardText } from './find'
 
 const SHARED = { id: 'base', text: '기본 프롬프트', scope: 'shared' } as const
 const SESSION = { id: 'env', text: '환경', scope: 'session' } as const
@@ -78,4 +79,39 @@ test('작업 폴더를 읽지 못해도 기본 섹션을 그대로 돌려준다'
     throw new Error('boom')
   })
   expect((await compose($)).map(s => s.id)).toEqual(['base', 'env'])
+})
+
+const guardOf = (dir: string) => guardText(dir)
+
+test('guardText: 배정 줄에 에이전트 수 예정과 초과 이유를 적게 한다', () => {
+  const text = guardOf('/proj/war-room')
+  expect(text).toContain('에이전트 n개 예정')
+  expect(text).toContain('이유 한 줄')
+})
+
+test('guardText: 끝난 에이전트를 SendMessage로 깨우지 않는다', () => {
+  const text = guardOf('/proj/war-room')
+  expect(text).toContain('SendMessage')
+  expect(text).toContain('새 에이전트에 맡긴다')
+})
+
+test('guardText: 요청에 없던 새 기능·명령·화면을 만들지 않고 결함 수정은 범위 안이다', () => {
+  const text = guardOf('/proj/war-room')
+  expect(text).toContain('새 기능·명령·화면은 만들지 않고')
+  expect(text).toContain('다음 할 일')
+  expect(text).toContain('결함 수정은 범위 안')
+})
+
+test('guardText: 스크린샷·브라우저 확인·긴 출력은 매니저가 직접 보지 않는다', () => {
+  const text = guardOf('/proj/war-room')
+  expect(text).toContain('스크린샷')
+  expect(text).toContain('결론만 받는다')
+})
+
+test('guardText: 중·상 일을 끝내면 /clear를 권한다', () => {
+  expect(guardOf('/proj/war-room')).toContain('/clear')
+})
+
+test('guardText는 1600바이트 이하다', () => {
+  expect(new TextEncoder().encode(guardOf('/proj/war-room')).length).toBeLessThanOrEqual(1600)
 })

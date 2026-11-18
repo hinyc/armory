@@ -20,7 +20,7 @@ tools: Read, Grep, Glob, Bash, Skill
 ```bash
 mkdir -p war-room/.eval
 cat > war-room/.eval/<롤 id>.json <<'JSON'
-{"task":"<작업 요약>","role":"<롤 id>","maxAttempts":3,
+{"task":"<작업 요약>","role":"<롤 id>","maxAttempts":1,
  "current":{"attempt":1,"state":"running","focus":"<지금 보는 것>","items":[]},
  "updatedAt":"<date -Iseconds 로 얻은 시각>"}
 JSON

@@ -22,6 +22,9 @@ TEMPLATE = os.path.join(SKILL, 'template')
 HISTORY = os.path.join(SKILL, 'template-history')
 MARK = '# 프로젝트별 규칙'
 ROLES = ('manager', 'evaluator')
+# 템플릿 4판부터 maxAttempts 기본값이 3에서 1로 바뀌었다 (references/upgrade.md 4절)
+ATTEMPTS_RESET_BEFORE = 4
+OLD_MAX_ATTEMPTS = 3
 
 
 def read(path):
@@ -94,6 +97,10 @@ def plan(wr):
     tc = json.loads(read(os.path.join(TEMPLATE, 'config.json')))
     p['pv'], p['tv'] = pc.get('templateVersion', 1), tc['templateVersion']
     p['config_add'] = [k for k in tc if k not in pc]
+    p['attempts_reset'] = (p['pv'] < ATTEMPTS_RESET_BEFORE
+                           and pc.get('maxAttempts') == OLD_MAX_ATTEMPTS
+                           and 'maxAttempts' in tc)
+    p['attempts_new'] = tc.get('maxAttempts')
 
     for role in ROLES:
         path = os.path.join(wr, 'roles', f'{role}.md')
@@ -149,6 +156,8 @@ def report(p):
             print(f"roles/{role}.md: {state}, 옛 템플릿 문장 {r['old']}줄 버림, 사용자 문장 {n}줄 옮김")
     print('config.json: ' + (('키 추가 ' + ', '.join(p['config_add'])) if p['config_add'] else '추가할 키 없음')
           + (', templateVersion 갱신' if p['pv'] != p['tv'] else ''))
+    if p['attempts_reset']:
+        print(f"config.json: maxAttempts {OLD_MAX_ATTEMPTS} → {p['attempts_new']} (옛 기본값 이전)")
     print(f"STATUS.md: 절 추가 {len(p['status_add'])}개, 절 제목 설명 갱신 {len(p['status_retitle'])}개"
           + (', 머리말 설명 갱신' if p['status_header'] else ''))
     print('.gitignore: ' + ('war-room/.eval/ 추가' if p['gitignore_add'] else '그대로'))
@@ -203,6 +212,8 @@ def apply(wr, p, drop):
     for k, v in cfg.items():
         if k not in merged:
             merged[k] = v
+    if p['attempts_reset']:
+        merged['maxAttempts'] = p['attempts_new']
     merged['templateVersion'] = tc['templateVersion']
     write(cfg_path, json.dumps(merged, ensure_ascii=False, indent=2) + '\n')
     after_cfg = json.loads(read(cfg_path))

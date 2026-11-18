@@ -92,7 +92,7 @@
 {
   "task": "로그인 폼 수정",
   "role": "frontend",
-  "maxAttempts": 3,
+  "maxAttempts": 1,
   "previous": {
     "attempt": 1,
     "verdict": "fail",
@@ -139,7 +139,7 @@
 ```bash
 mkdir -p war-room/.eval
 cat > war-room/.eval/frontend.json <<EOF
-{"task":"로그인 폼 수정","role":"frontend","maxAttempts":3,
+{"task":"로그인 폼 수정","role":"frontend","maxAttempts":1,
  "current":{"attempt":1,"state":"running","focus":"기준 판정","items":[]},
  "updatedAt":"$(date -Iseconds)"}
 EOF
