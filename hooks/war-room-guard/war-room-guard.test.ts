@@ -40,6 +40,8 @@ test('config가 켜져 있으면 섹션을 맨 뒤에 session으로 추가한다
   expect(added.text).toContain('메인 세션만 따른다')
   expect(added.text).toContain('하 등급 일만 매니저가 직접')
   expect(added.text).toContain('등급 중')
+  expect(added.text).toContain('세션에서 한 번만 부른다')
+  expect(added.text).toContain('이미 불렀으면 다시 부르지 않고')
   expect(added.text).not.toContain('맞는 롤이 없으면 그렇다고 알리고 매니저가 직접 한다')
 })
 

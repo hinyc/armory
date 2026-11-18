@@ -77,6 +77,12 @@ def sections(text):
     return out
 
 
+def header(text):
+    """STATUS 첫 `## ` 절 앞의 `>` 설명 줄들."""
+    head = text.split('\n## ', 1)[0]
+    return [l for l in head.split('\n') if l.startswith('>')]
+
+
 def plan(wr):
     """비교 결과. 파일을 쓰지 않는다."""
     p = {'notes': [], 'moves': [], 'roles': {}, 'blocked': []}
@@ -116,8 +122,11 @@ def plan(wr):
         target = set_model(tparts[0], frontmatter_model(parts[0])) if role == 'evaluator' else tparts[0]
         p['roles'][role] = {'changed': parts[0].strip() != target.strip(), 'old': old}
 
-    ps = sections(read(os.path.join(wr, 'STATUS.md'))) if os.path.exists(os.path.join(wr, 'STATUS.md')) else []
-    ts = sections(read(os.path.join(TEMPLATE, 'STATUS.md')))
+    st = read(os.path.join(wr, 'STATUS.md')) if os.path.exists(os.path.join(wr, 'STATUS.md')) else ''
+    tst = read(os.path.join(TEMPLATE, 'STATUS.md'))
+    p['status_header'] = bool(st) and header(st) != header(tst)
+    ps = sections(st)
+    ts = sections(tst)
     pkeys = {k: l for k, l in ps}
     p['status_add'] = [l for k, l in ts if k not in pkeys]
     p['status_retitle'] = [(pkeys[k], l) for k, l in ts if k in pkeys and pkeys[k] != l]
@@ -140,7 +149,8 @@ def report(p):
             print(f"roles/{role}.md: {state}, 옛 템플릿 문장 {r['old']}줄 버림, 사용자 문장 {n}줄 옮김")
     print('config.json: ' + (('키 추가 ' + ', '.join(p['config_add'])) if p['config_add'] else '추가할 키 없음')
           + (', templateVersion 갱신' if p['pv'] != p['tv'] else ''))
-    print(f"STATUS.md: 절 추가 {len(p['status_add'])}개, 절 제목 설명 갱신 {len(p['status_retitle'])}개")
+    print(f"STATUS.md: 절 추가 {len(p['status_add'])}개, 절 제목 설명 갱신 {len(p['status_retitle'])}개"
+          + (', 머리말 설명 갱신' if p['status_header'] else ''))
     print('.gitignore: ' + ('war-room/.eval/ 추가' if p['gitignore_add'] else '그대로'))
     if p['moves']:
         print('옮길 사용자 문장 (--drop 번호로 뺄 수 있음):')
@@ -199,9 +209,23 @@ def apply(wr, p, drop):
     checks.append(('config.json 읽힘·roles 같음', after_cfg.get('roles') == before_cfg.get('roles')))
 
     st_path = os.path.join(wr, 'STATUS.md')
-    if os.path.exists(st_path) and (p['status_add'] or p['status_retitle']):
+    if os.path.exists(st_path) and (p['status_add'] or p['status_retitle'] or p['status_header']):
         text = read(st_path)
-        before_lines = len([l for l in text.split('\n') if l.strip()])
+        before_lines = len([l for l in text.split('\n') if l.strip() and not l.startswith('>')])
+        if p['status_header']:
+            head, rest = text.split('\n## ', 1) if '\n## ' in text else (text, None)
+            kept = [l for l in head.split('\n') if not l.startswith('>')]
+            new_head = header(read(os.path.join(TEMPLATE, 'STATUS.md')))
+            out, placed = [], False
+            for l in kept:
+                out.append(l)
+                if not placed and l.startswith('# '):
+                    out += [''] + new_head
+                    placed = True
+            if not placed:
+                out = new_head + out
+            head = re.sub(r'\n{3,}', '\n\n', '\n'.join(out))
+            text = head + ('\n## ' + rest if rest is not None else '')
         for old, new in p['status_retitle']:
             text = text.replace(old, new, 1)
         tkeys = [k for k, _ in sections(read(os.path.join(TEMPLATE, 'STATUS.md')))]
@@ -216,7 +240,7 @@ def apply(wr, p, drop):
             block = line + '\n\n- 없음\n\n'
             text = text[:pos] + block + text[pos:] if pos is not None else text.rstrip('\n') + '\n\n' + block
         write(st_path, text)
-        after_lines = len([l for l in read(st_path).split('\n') if l.strip()])
+        after_lines = len([l for l in read(st_path).split('\n') if l.strip() and not l.startswith('>')])
         checks.append(('STATUS.md 내용 줄 줄지 않음', after_lines >= before_lines))
 
     if p['gitignore_add']:
