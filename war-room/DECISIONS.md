@@ -2,6 +2,13 @@
 
 > 되돌리기 어렵거나 나중에 "왜 이렇게 했지?"가 나올 결정만 적는다. 새 항목은 위에 추가한다. 지난 항목은 고치지 않고, 바뀌면 새 항목으로 뒤집는다.
 
+## 2026-11-18 · 매니저 문서를 등급별로 나누고 명령으로 되는 확인은 매니저가 함
+- 결정: verify-loop.md·evaluation-manager.md를 없애고 grade(등급 세부)·verify(중·상 공통)·verify-high(상)·retry(실패 때)·eval-edge(드문 경우)로 나눈다. SKILL.md는 등급 표와 색인을 담아 하 등급을 혼자 끝낼 수 있게 한다. 기준 검토는 도구 10번·지정 파일만 읽는다. 중 등급에서 기준이 전부 판단 없이 비교되는 `명령 → 기대 결과`면 매니저가 판정한다. 정형 릴리즈(검증·커밋된 변경의 버전 올림·push·태그뿐)는 기준 검토·평가 없이 롤 하나가 하고 매니저가 명령으로 확인한다. 같은 날 정한 "릴리즈는 항상 검증자가 직접 돌린다"는 정형이 아닌 릴리즈에만 남긴다
+- 이유: 매니저가 일마다 읽는 문서와 에이전트 수가 비용의 대부분이었다. 대신 명령으로 못 잡는 문제와 릴리즈 노트는 따로 보는 눈이 없어진다
+- 정한 사람: 사용자 (추천안 승인), 파일 구성과 크기 상한은 매니저 판단
+- 되돌리는 법: 이 변경 전 verify-loop.md·evaluation-manager.md·SKILL.md 복원
+- 영향: skills/war-room/SKILL.md, references/{grade,verify,verify-high,retry,eval-edge,delegation,state-docs,judgment,multi-session}.md, agents/evaluator.md, README.md
+
 ## 2026-11-18 · war-room 템플릿 1 → 3 반영
 - 결정: 이 저장소 roles/manager.md·evaluator.md의 템플릿 부분을 3판으로 바꾸고 config에 templateVersion 3을 넣는다. manager.md의 사용자 문장 3줄은 프로젝트별 규칙으로 옮기고, 문서를 맡기기 전에 갱신하라는 1줄은 버린다. release 롤은 준비(커밋 없음)와 승인 뒤 릴리즈 두 단계로 일한다
 - 정한 사람: 사용자
