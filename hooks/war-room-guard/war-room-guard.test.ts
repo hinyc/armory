@@ -112,6 +112,12 @@ test('guardText: 중·상 일을 끝내면 /clear를 권한다', () => {
   expect(guardOf('/proj/war-room')).toContain('/clear')
 })
 
-test('guardText는 1600바이트 이하다', () => {
-  expect(new TextEncoder().encode(guardOf('/proj/war-room')).length).toBeLessThanOrEqual(1600)
+test('guardText: 컨텍스트가 부족하면 managerCompactAt 상향을 제안하되 승인 전에는 config를 고치지 않는다', () => {
+  const text = guardOf('/proj/war-room')
+  expect(text).toContain('managerCompactAt')
+  expect(text).toContain('승인')
+})
+
+test('guardText는 1900바이트 이하다', () => {
+  expect(new TextEncoder().encode(guardOf('/proj/war-room')).length).toBeLessThanOrEqual(1900)
 })
