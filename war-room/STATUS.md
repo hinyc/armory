@@ -6,7 +6,7 @@
 
 ## 진행 중 (형식: `롤 · 작업 · 등급 · 시도 n/최대 · 남은 실패 기준 · 기준이 적힌 곳(계획·설계 문서 경로)`)
 
-- release · v0.12.0 정형 릴리즈 (war-room-commander, question-band 수정) · 상 · 시도 1/1 · 매니저 명령 확인 7개 · verify-high.md 7절
+- 없음
 
 ## 다음 할 일
 
@@ -42,6 +42,7 @@
 - 없음
 
 ## 최근 완료 (STATUS.md 전체 10KB 이하, 넘치면 오래된 것부터 archive/로)
+- 2026-11-19 · release · v0.12.0 정형 릴리즈 (war-room-commander, question-band 수정), 등급 상, 시도 1번, 에이전트 1개 약 7만 토큰, 매니저 명령 확인 통과 (태그 커밋 e6a0faa, 릴리즈 노트 작성, gh 계정 복구됨)
 - 2026-11-19 · mod-dev · question-band 양보 수정 (claude 2.1.328에서 AbovePrompt의 next가 다른 mod 그림을 알려주지 않아 테스트 실패 → AbovePromptList에서 다른 플러그인 행이 있으면 질문 띠 행 제거, 테스트 97+1실패 → 100), 등급 상, 평가 생략(사용자 선택), 에이전트 2개. 한계: 평가 띠가 감싼 행은 양보 못 함, hooks/register.ts 등록 순서 주석 점검 필요, 실제 화면 미확인
 - 2026-11-19 · manager(직접) · war-room-commander 스킬 추가: 감독 자리 지정·이어받기·해제·조회, 지휘 보드 COMMAND.md·commander 롤 템플릿, multi-session.md 세션 줄을 STATUS → 보드로, war-room 배정에서 commander 제외, war-room-guard가 roles.commander true면 담당 확인 지침 추가(386바이트, guardText와 따로), v0.12.0
 - 2026-11-19 · release · v0.11.0 정형 릴리즈 (매니저 컨텍스트 부족 제안), 등급 상, 시도 1번, 에이전트 1개 약 6만 토큰, 매니저 명령 확인 통과 (기능 커밋 0594fdd, 태그 커밋 ba67641, 릴리즈 노트 작성, gh 계정 복구됨)
