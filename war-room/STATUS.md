@@ -10,7 +10,7 @@
 
 ## 다음 할 일
 
-- war-room-commander(감독 지정) 실사용 시험: 지정 → 세션 재시작 → "감독 이어받기" → 해제까지 돌려 보드만으로 이어지는지 확인. validate 통과, test 97 통과·1 실패(question-band "다른 mod가 띠를 그리고 있으면 양보한다", 이번 변경 전부터 실패, 별도 조사 필요)
+- war-room-commander(감독 지정) 실사용 시험: 지정 → 세션 재시작 → "감독 이어받기" → 해제까지 돌려 보드만으로 이어지는지 확인. 실제 세션 확인 (validate 통과, test 100 통과)
 - 실제 프로젝트에서 매니저 토큰이 15만 근처에서 압축되는지, 압축 뒤 바닥(이 환경 약 6~7만)과 응답당 평균 컨텍스트 재기
 - 사용자 확인: 기준 검토 도구 호출을 `maxTurns`로 강제하는 별도 에이전트(criteria-reviewer)를 만들지 여부. 기준 검토를 armory:evaluator haiku 한 번으로 정한 2026-11-13 결정을 바꾸게 돼 이번엔 만들지 않았고, maxTurns 지원도 공식 문서로 확인하지 못함
 - 다른 프로젝트(Conceptpowers 등)는 플러그인 업데이트 뒤 "war-room 업데이트"로 템플릿 판 4를 반영해야 `maxAttempts` 3 → 1이 이전된다. 그 세션에서 에이전트 수·매니저 컨텍스트 크기(2026-11-18 세션은 9개·40만 토큰·64분)가 줄었는지 확인
@@ -42,6 +42,7 @@
 - 없음
 
 ## 최근 완료 (STATUS.md 전체 10KB 이하, 넘치면 오래된 것부터 archive/로)
+- 2026-11-19 · mod-dev · question-band 양보 수정 (claude 2.1.328에서 AbovePrompt의 next가 다른 mod 그림을 알려주지 않아 테스트 실패 → AbovePromptList에서 다른 플러그인 행이 있으면 질문 띠 행 제거, 테스트 97+1실패 → 100), 등급 상, 평가 생략(사용자 선택), 에이전트 2개. 한계: 평가 띠가 감싼 행은 양보 못 함, hooks/register.ts 등록 순서 주석 점검 필요, 실제 화면 미확인
 - 2026-11-19 · manager(직접) · war-room-commander 스킬 추가: 감독 자리 지정·이어받기·해제·조회, 지휘 보드 COMMAND.md·commander 롤 템플릿, multi-session.md 세션 줄을 STATUS → 보드로, war-room 배정에서 commander 제외, war-room-guard가 roles.commander true면 담당 확인 지침 추가(386바이트, guardText와 따로), v0.12.0
 - 2026-11-19 · release · v0.11.0 정형 릴리즈 (매니저 컨텍스트 부족 제안), 등급 상, 시도 1번, 에이전트 1개 약 6만 토큰, 매니저 명령 확인 통과 (기능 커밋 0594fdd, 태그 커밋 ba67641, 릴리즈 노트 작성, gh 계정 복구됨)
 - 2026-11-19 · mod-dev·skill-author · 매니저 컨텍스트 부족 제안 (guardText 규칙 ⑥: 앞 내용을 잃으면 매니저가 부족하다고 말하고 managerCompactAt 상향 300000 제안, config는 승인 전 안 고침; README·delegation.md 6절에 상향 안내·100만 한도 설명), 등급 상, 시도 1번 통과 (기준 검토 반영 8건 중 7건, 평가 ✗ 0·⚠ 1(guardText +17.7%), 에이전트 4개, 테스트 92 → 93, 커밋 전)

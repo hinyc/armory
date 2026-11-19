@@ -160,15 +160,63 @@ test('중단된 턴은 중단으로 표시하고, 다음 질문 전까지 요약
   await ui.unmount()
 })
 
+const LIST = {
+  plugin: 'armory',
+  component: 'AbovePromptList',
+  props: { ...BAND.props, isCollapsed: false },
+} as const
+
+/** 다른 플러그인이 이미 그려 둔 행처럼 쓰는 평범한 Text 요소. */
+const text = (value: string) => ({ type: 'Text' as const, children: [value] })
+
+/** 우리 띠 행: 맨 바깥 Box에 띠 key가 붙어 있다. */
+const bandRow = (value: string) => ({
+  plugin: 'armory',
+  tree: { type: 'Box' as const, props: { key: 'question-band' }, children: [text(value)] },
+})
+
 test('다른 mod가 띠를 그리고 있으면 양보한다', async ($, on) => {
   mock.clock(on)
-  engineBeneath(on, undefined, '다른 mod')
-
+  engineBeneath(on)
   await $.prompt.submit(typed('질문'))
 
-  const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  const theirs = text('다른 mod')
+  const ui = await $.ui.mount({
+    ...LIST,
+    surface: 'terminal',
+    props: {
+      ...LIST.props,
+      rows: [
+        { plugin: 'other', tree: theirs },
+        bandRow('❯ 질문 경과'),
+      ],
+    },
+  })
   expect(await ui.find({ type: 'Text', text: /다른 mod/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /경과/ })).toBeUndefined()
+  await ui.unmount()
+})
+
+test('다른 mod 행이 없으면 우리 띠를 남긴다', async ($, on) => {
+  mock.clock(on)
+  engineBeneath(on)
+  await $.prompt.submit(typed('질문'))
+
+  const ui = await $.ui.mount({
+    ...LIST,
+    surface: 'terminal',
+    props: { ...LIST.props, rows: [bandRow('❯ 질문 경과')] },
+  })
+  expect(await ui.find({ type: 'Text', text: /경과/ })).toBeDefined()
+  await ui.unmount()
+})
+
+test('그려진 띠 맨 바깥 Box에 양보 판단용 key가 붙는다', async ($, on) => {
+  mock.clock(on)
+  engineBeneath(on)
+  await $.prompt.submit(typed('질문'))
+  const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  expect(await ui.find({ type: 'Box', key: 'question-band' })).toBeDefined()
   await ui.unmount()
 })
 

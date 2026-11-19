@@ -3,7 +3,7 @@
 // question-band 스킬(/question-band)로 켜짐/꺼짐을 전환한다.
 import type { PromptOrigin, PromptSubmitInput, Register } from 'claude-code'
 
-import { drawBand, isBlank } from './band'
+import { drawBand, yieldRows } from './band'
 import { beginQuestion, bindTurn, clearQuestion, finishTurn, readBand, resumeTicker } from './question'
 import { isEnabled, isToggleSkill, loadEnabled, toggleEnabled, toggleReply } from './toggle'
 
@@ -68,13 +68,20 @@ export const register: Register = on => {
     return next(e)
   })
 
+  // 플러그인마다 따로 불리므로 양보 여부는 여기서 정하지 않는다(→ AbovePromptList).
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     const beneath = await next(e)
     return guarded(async () => {
-      if (e.props.hasSurvey || !isBlank(beneath) || !(await isEnabled($))) return beneath
+      if (e.props.hasSurvey || !(await isEnabled($))) return beneath
       const { question, now } = await readBand($)
       if (question === null) return beneath
       return drawBand($, e, question, now, offsetMinutes)
     }, beneath)
+  })
+
+  // 다른 플러그인이 비어 있지 않은 행을 그렸으면 우리 행을 뺀다.
+  on('ui.render', { component: 'AbovePromptList' }, ($, e, next) => {
+    const rows = Array.isArray(e.props.rows) ? yieldRows($.plugin.name, e.props.rows) : e.props.rows
+    return next(rows === e.props.rows ? e : { ...e, props: { ...e.props, rows } })
   })
 }

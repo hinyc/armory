@@ -1,5 +1,5 @@
 // 입력창 위 띠 그리기: 질문 요약(최대 4줄) + 질문 시각·경과/소요 시간.
-import type { EngineInterface, RenderElement, RenderInput } from 'claude-code'
+import type { AbovePromptRow, EngineInterface, RenderElement, RenderInput } from 'claude-code'
 
 import type { Question } from '../../types'
 import { formatClock, formatDuration } from './format'
@@ -43,6 +43,22 @@ export function isBlank(tree: RenderElement | null | undefined): boolean {
   })
 }
 
+/** 띠 맨 바깥 Box의 key: 같은 플러그인의 행이 우리 띠 하나뿐인지 알아보는 표시. */
+export const BAND_KEY = 'question-band'
+
+const isOnlyBand = (row: AbovePromptRow): boolean =>
+  (row.tree as { props?: { key?: unknown } }).props?.key === BAND_KEY
+
+/**
+ * 다른 플러그인이 비어 있지 않은 행을 그렸으면 우리(self) 띠 행을 뺀 새 목록을, 아니면 받은 목록 그대로.
+ * 평가 띠가 같은 플러그인 행에 우리 띠를 감싸 그렸다면(맨 바깥이 우리 Box가 아님) 행 하나를 통째로 빼면
+ * 평가 띠까지 사라지므로 그대로 둔다.
+ */
+export function yieldRows(self: string, rows: readonly AbovePromptRow[]): readonly AbovePromptRow[] {
+  const othersDrew = rows.some(row => row.plugin !== self && !isBlank(row.tree))
+  return othersDrew ? rows.filter(row => row.plugin !== self || !isOnlyBand(row)) : rows
+}
+
 export function drawBand(
   $: EngineInterface,
   e: RenderInput,
@@ -53,7 +69,7 @@ export function drawBand(
   const { Box, Text } = $.ui.resolve(e)
   const isRunning = question.status === 'running'
   return (
-    <Box flexDirection="column">
+    <Box key={BAND_KEY} flexDirection="column">
       {question.summary.map((line, index) => (
         <Text key={index} wrap="truncate-end" bold={index === 0}>
           {index === 0 ? '❯ ' : '  '}
