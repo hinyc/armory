@@ -1,7 +1,7 @@
 import { expect, test } from 'claude-code/testing'
 import type { Engine } from 'claude-code/testing'
 import type { On } from 'claude-code'
-import { guardText } from './find'
+import { commanderText, guardText } from './find'
 
 const SHARED = { id: 'base', text: '기본 프롬프트', scope: 'shared' } as const
 const SESSION = { id: 'env', text: '환경', scope: 'session' } as const
@@ -120,4 +120,29 @@ test('guardText: 컨텍스트가 부족하면 managerCompactAt 상향을 제안�
 
 test('guardText는 1900바이트 이하다', () => {
   expect(new TextEncoder().encode(guardOf('/proj/war-room')).length).toBeLessThanOrEqual(1900)
+})
+
+test('roles.commander가 true면 감독 자리 지침을 같은 섹션 끝에 붙인다', async ($, on) => {
+  engineBeneath(on, '/proj', { '/proj/war-room/config.json': '{"roles":{"manager":true,"commander":true}}' })
+  const sections = await compose($)
+  expect(sections.map(s => s.id)).toEqual(['base', 'env', 'armory:war-room'])
+  const text = sections[2].text
+  expect(text).toContain('# war-room')
+  expect(text).toContain('/proj/war-room/COMMAND.md')
+  expect(text).toContain('armory:war-room-commander')
+  expect(text.endsWith(commanderText('/proj/war-room'))).toBe(true)
+})
+
+test('roles.commander가 없거나 false면 감독 자리 지침을 넣지 않는다', async ($, on) => {
+  engineBeneath(on, '/proj', { '/proj/war-room/config.json': '{"roles":{"manager":true,"commander":false}}' })
+  expect((await compose($))[2].text).not.toContain('COMMAND.md')
+})
+
+test('config JSON이 깨지면 감독 자리 지침을 넣지 않는다', async ($, on) => {
+  engineBeneath(on, '/proj', { '/proj/war-room/config.json': '{ 깨진 json' })
+  expect((await compose($))[2].text).not.toContain('COMMAND.md')
+})
+
+test('commanderText는 400바이트 이하다', () => {
+  expect(new TextEncoder().encode(commanderText('/proj/war-room')).length).toBeLessThanOrEqual(400)
 })

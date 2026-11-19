@@ -67,6 +67,20 @@ export function isEvaluatorOn(configText: string): boolean {
   }
 }
 
+/** 감독 자리가 켜져 있는지 (roles.commander === true). 기본으로 없는 자리라 읽기 실패·없음은 꺼짐으로 본다. */
+export function isCommanderOn(configText: string): boolean {
+  try {
+    const roles = (JSON.parse(configText) as { roles?: unknown } | null)?.roles
+    return typeof roles === 'object' && roles !== null && (roles as { commander?: unknown }).commander === true
+  } catch {
+    return false
+  }
+}
+
+/** 감독 자리가 켜졌을 때 guardText 뒤에 붙이는 지침. guardText 상한과 따로 잰다. */
+export const commanderText = (warRoomDir: string): string =>
+  `감독 자리가 켜져 있다. 요청을 처리하기 전에 ${warRoomDir}/COMMAND.md의 \`## 감독 자리\`를 읽고 이 세션이 담당인지 확인한다 (armory:war-room-commander 스킬 3절). 담당이면 commander 롤이 manager 롤보다 먼저다. 담당인지 알 수 없으면 짐작하지 않고 묻고, 답 전에는 매니저로만 일하며 보드를 쓰지 않는다.`
+
 /** 시스템 프롬프트에 넣을 지침. */
 export const guardText = (warRoomDir: string): string =>
   [

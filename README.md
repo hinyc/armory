@@ -16,6 +16,7 @@
 | [`status-dashboard`](#status-dashboard) | skill | AI가 JSON을 관리하고 사람은 HTML로 보는 진행 대시보드 | "진행상황 대시보드" |
 | [`screen-spec`](#screen-spec) | skill | 실제 화면 캡처 + 목 API + 코드 기반 설명으로 화면설계서 생성·갱신 | "화면설계서 만들어줘" |
 | [`war-room`](#war-room) | skill + mod | 롤 에이전트에 일을 배정하고 요구 수준까지 검증·반복 | "롤 추가", `war-room/`이 있는 프로젝트의 모든 작업 |
+| [`war-room-commander`](#war-room-commander) | skill | war-room에 매니저 윗급 감독 자리를 지정·이어받기·해제하고 지휘 보드로 재시작 뒤에도 이어감 | "감독 지정", "지금 감독 있어?", "감독 해제" |
 | [`question-band`](#question-band) | mod + skill | 입력창 위에 현재 질문 요약과 경과 시간 표시 | `/question-band` (전환) |
 
 스킬은 설명(description)에 맞는 요청이 오면 자동으로 쓰인다. 직접 부르려면 `/armory:<이름>`.
@@ -122,6 +123,22 @@ war-room/
 - 토큰을 아끼려고 스킬은 세션에서 한 번만 부르고(가드 지침도 같다), 매번 필요한 배정 절차만 SKILL.md에 두고 설치·롤 관리·상태 문서 세부는 references에서 필요할 때만 읽는다. STATUS.md는 바뀐 절만 고치고, 기본 manager 롤 문서에는 스킬 규칙을 옮겨 적지 않고 프로젝트별 규칙만 둔다.
 - 여러 세션을 나눠 쓸 때는 한 세션이 감독을 맡는다. 지시(`[감독 지시]`)·보고(`[작업 보고]`)는 고정 칸으로 주고받고, 작업 세션은 자기 war-room 롤로 일하고 판정한다. 감독은 공유 약속 일치·통합 검증·보안 같은 교차 관심사만 판정을 맡기고, 되돌리기 어려운 결정은 사용자만 승인한다. 연결 워크트리 작업 세션은 `war-room/` 문서를 쓰지 않는다. 감독은 보고마다 기계 확인(HEAD·판정 근거 대조)만 하고 평가 에이전트는 정해진 때(공유 약속 영향, 상 등급 단계 끝, 통합 검증, 머지 관문)에만 띄운다 (`references/multi-session.md`, 작업 세션은 `references/work-session.md`).
 - 플러그인을 업데이트한 뒤 war-room을 쓰면, 프로젝트 config의 `templateVersion`이 스킬 템플릿보다 낮을 때 반영할지 한 번 묻는다. 비교는 세션당 한 번이고, 비교·반영은 `scripts/upgrade.py`가 해서 매니저는 요약만 읽는다. 반영하면 기본 롤 문서의 `# 프로젝트별 규칙` 위쪽과 빠진 config 키·STATUS 절만 바꾸고(템플릿 4판 미만에서 `maxAttempts`가 3이면 새 기본값 1로 바꾼다. 옛 기본값과 일부러 적은 3은 구분하지 못한다), 프로젝트별 규칙과 사용자가 만든 롤은 그대로 둔다. "war-room 업데이트"로 직접 부를 수도 있다 (`references/upgrade.md`).
+
+## war-room-commander
+
+war-room 프로젝트에 **감독(commander) 자리**를 만든다. 감독은 매니저 윗급으로, 여러 작업 세션에 `[감독 지시]`를 보내고 `[작업 보고]`를 확인한다 (운영 규칙은 war-room `references/multi-session.md`). 감독·커맨더·총지휘자·지휘자·총매니저는 모두 같은 자리다.
+
+```
+war-room/
+├─ COMMAND.md          # 지휘 보드: 감독 자리, 위임 범위, 작업 세션, 지시 진행, 교차 판정, 머지 관문, 다시 시작하면 할 일, 자리 이력
+└─ roles/commander.md  # 지정할 때 생김 (배정 대상 아님, 프로젝트별 규칙만)
+```
+
+- 감독은 세션이 아니라 자리에 지정한다. 세션 ID 대신 담당 표시(예: `감독-20261119-1500`)를 보드에 적고, 새 세션은 "감독 이어받기"로 자리를 넘겨받는다. 이전 세션이 끝났는지 확인한 뒤에만 넘겨받는다.
+- 기본으로는 없는 자리다. 지정하면 `config.json`에 `roles.commander: true`가 생기고, 담당 세션에서는 commander 롤이 manager 롤보다 먼저다. 해제하면 `false`로 바뀌고 보드·롤 파일은 이력으로 남는다.
+- 서브에이전트와 연결 워크트리 세션은 감독이 될 수 없다.
+- `war-room-guard` mod는 `roles.commander`가 `true`면 시스템 프롬프트 지침 끝에 "요청을 처리하기 전에 `COMMAND.md`로 이 세션이 담당인지 확인한다"를 붙인다. 시스템 프롬프트는 세션 시작 때 정해지므로 재시작한 세션부터 들어간다.
+- 보드는 STATUS·DECISIONS와 따로 둔다. 세션별 진행은 보드, 결정 원문은 DECISIONS, 세션 안 롤 작업은 STATUS가 원본이다.
 
 ## question-band
 

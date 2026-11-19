@@ -6,7 +6,7 @@ import type { Register } from 'claude-code'
 
 import { compactIfNeeded } from './compact'
 import { delegateContext } from './delegate'
-import { findEnabledWarRoom, guardText } from './find'
+import { commanderText, findEnabledWarRoom, guardText, isCommanderOn } from './find'
 
 export const register: Register = on => {
   on('prompt.compose', async ($, e, next) => {
@@ -14,7 +14,8 @@ export const register: Register = on => {
     try {
       const warRoom = await findEnabledWarRoom($)
       if (warRoom === undefined) return result
-      return { sections: [...result.sections, { id: 'armory:war-room', text: guardText(warRoom.dir), scope: 'session' as const }] }
+      const text = isCommanderOn(warRoom.configText) ? `${guardText(warRoom.dir)}\n${commanderText(warRoom.dir)}` : guardText(warRoom.dir)
+      return { sections: [...result.sections, { id: 'armory:war-room', text, scope: 'session' as const }] }
     } catch {
       return result
     }
