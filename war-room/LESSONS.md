@@ -3,6 +3,11 @@
 > 작업하다 막힌 것, 다음에 같은 실수를 안 하려면 알아야 할 것. 롤 문서에 반영했거나 더 쓸모없으면 지우고 archive/로 옮긴다.
 
 <!-- 형식
+## 2026-11-19 · mod-dev · mod 훅 시점이 엔진 제약에 막힘
+- 겪은 일: prompt.submit에서 $.session.compact()가 거절됐고, prompt.compose session 섹션은 세션 도중 바뀌어도 모델에 반영되지 않았다. 같은 이벤트를 매처 없이 두 번 등록하면 모듈 로드가 실패했고, $.state 키를 다른 파일에서 import하면 로드가 실패했다
+- 원인·해결: 압축은 turn.complete(reason answer)에서, 도중 지침은 prompt.submit context로 보냈다. 두 번째 훅에는 매처를 붙이고 state 키는 파일마다 문자열 리터럴로 적었다. 단위 테스트가 통과해도 실제 대화형 세션 시험에서야 드러났다
+- 롤 문서 반영 후보: roles/mod-dev.md 일하는 방식에 "엔진 시점·캐시에 기대는 동작은 실제 대화형 세션으로 확인한다(claude -p는 compact 미지원)"
+
 ## YYYY-MM-DD · <롤 id> · 한 줄 요약
 - 겪은 일: 무엇이 안 됐나
 - 원인·해결: 

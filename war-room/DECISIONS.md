@@ -2,6 +2,12 @@
 
 > 되돌리기 어렵거나 나중에 "왜 이렇게 했지?"가 나올 결정만 적는다. 새 항목은 위에 추가한다. 지난 항목은 고치지 않고, 바뀌면 새 항목으로 뒤집는다.
 
+## 2026-11-19 · 매니저 컨텍스트에 토큰 상한을 둠
+- 결정: war-room-guard mod가 메인 세션 토큰이 10만 이상이면 위임 전환 지침을 사용자 제출의 context로 전환마다 한 번 전달하고(시스템 프롬프트 섹션은 세션 도중 반영되지 않음을 실제 시험으로 확인), 15만 이상이면 정상 종료된 턴 끝(turn.complete)에 한 번 압축한다. 설정은 config.json의 선택 키 managerDelegateAt·managerCompactAt이고 0이면 끈다. 대화를 에이전트로 옮기는 방식은 쓰지 않는다
+- 이유: 한 세션이 압축 없이 6.4만 → 42.6만 토큰, 응답 268번, 누적 입력 7,470만이 됐고 큰 출력 몇 개가 아니라 매니저의 작은 호출이 쌓인 것이었다. 대화는 에이전트로 옮길 수 없다. prompt.submit에서는 엔진이 compact를 거절한다
+- 되돌리는 법: hooks/war-room-guard/{compact,delegate,limits}.ts와 limits.test.ts를 지우고 register.ts·types/index.d.ts·delegation.md 6절·SKILL.md 한 줄·README 문장을 되돌린다
+- 영향: hooks/war-room-guard/, types/index.d.ts, skills/war-room/SKILL.md, skills/war-room/references/delegation.md, README.md
+
 ## 2026-11-18 · 평가 시도 기본 1회, 재시도는 사용자가 판단
 - 결정: `maxAttempts` 기본값을 3에서 1로 한다. 판정이 실패하면 매니저는 자동 재시도하지 않고 못 미침 보고와 함께 재시도 여부를 묻는다(선택지: 재시도 한 번 더 / 보고의 대안 2개 / 여기서 멈춤). 재시도를 고르면 최대를 1 올린다. 사용자가 일마다 횟수를 말하거나 끝까지 모드면 기존대로다. 템플릿 판을 4로 올리고 upgrade.py가 판 4 미만 프로젝트의 옛 기본 3을 1로 바꾼다(사용자가 정한 다른 값은 유지, 옛 기본 3과 사용자가 적은 3은 구분하지 않음)
 - 이유: 2026-11-18 다른 프로젝트 세션에서 작은 요청 하나에 에이전트 9개·64분이 들었다. 실패 시 자동 재시도가 비용을 키우므로 재시도를 사용자가 정한다

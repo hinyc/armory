@@ -51,6 +51,10 @@ declare module 'claude-code' {
       now: number
       /** 지금 보이는 평가 진행(running·planning). 1초마다 파일을 다시 읽어 바뀔 때만 갱신. */
       evalBands: readonly EvalProgress[]
+      /** 매니저 컨텍스트 자동 압축을 이미 했거나 시도한 구간이면 true. 토큰 수가 압축값 아래로 내려가면 false. */
+      compactHold: boolean
+      /** 이번 위임값 초과 구간에 위임 전환 지침을 이미 넣었으면 true. 토큰 수가 위임값 아래로 내려가면 false. */
+      delegateSent: boolean
     }
   }
 }

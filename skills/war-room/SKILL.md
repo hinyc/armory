@@ -36,6 +36,7 @@ description: Use BEFORE starting any task in a project that has a war-room/ fold
 
 - `enabled` `false`(`roles.manager`가 `false`여도 같다): 배정·문서 갱신 없이 평소처럼 일하고 mod 지침도 빠진다.
 - `maxAttempts`(기본 1): 시도 상한. 1이면 실패해도 자동 재시도 없이 보고하고 사용자가 재시도를 정한다. 1보다 크면 사용자가 정한 값이라 그 횟수까지 자동 시도한다. 일마다 정할 수 있고, "될 때까지" 뜻이면 무시한다. `suggestRoles`(기본 `true`): `false`면 롤 제안을 하지 않는다.
+- `managerDelegateAt`·`managerCompactAt`: `delegation.md` 6절.
 - `roles.<id>`: `false`면 배정에서 뺀다. 없으면 `true`다. 파일만 있고 config에 없으면 켜진 것으로 보고 `true`로 추가한다. config에만 있고 파일이 없으면 배정하지 않고 경고한다.
 - `templateVersion`(없으면 1)이 스킬 `template/config.json`과 다르면 반영을 묻는다 (`upgrade.md`). JSON이 틀리면 멈추고 어디가 틀렸는지 알린다. 추측해서 고치지 않는다.
 
