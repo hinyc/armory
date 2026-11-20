@@ -2,6 +2,36 @@
 
 > 되돌리기 어렵거나 나중에 "왜 이렇게 했지?"가 나올 결정만 적는다. 새 항목은 위에 추가한다. 지난 항목은 고치지 않고, 바뀌면 새 항목으로 뒤집는다.
 
+## 2026-11-20 · PLACES.md는 묻지 않고 확인된 위치를 등록 권한자가 판단해 자동 등록
+- 결정: "2026-11-20 · 장소 목록 PLACES.md를 war-room/에 두고 감독 없이도 씀"의 "사용자가 확인한 위치만"을 뒤집는다. 쓰는 쪽(작업 세션 매니저, 감독 세션 pm)은 그대로이고 롤 에이전트·po·tpm은 읽기만. 확인된 위치 = (a) 사용자가 말하거나 답한 위치 (b) 근거 한 줄(실행 명령·출력 요지, `test -e`, 읽거나 고친 이슈·URL)과 함께 작업에서 쓰인 위치. 다시 쓸 위치인지는 매니저(감독 세션은 감독)가 판단하고 pm은 근거 형식만 본다(`확인된 위치: <부르는 말> → <위치> · <종류> · <쓰는 때> · <확인 근거>`). 등록 여부는 묻지 않고 보고에 `장소 목록: <부르는 말> 추가|고침` 한 줄. 추측·비밀·임시 위치 금지, 못 찾은 표현은 위치를 묻는다. 낡은 위치는 확인된 새 값이면 묻지 않고 고치고, 새 값 없이 지우기는 사용자가 안 쓴다고 했을 때만. 롤 보고의 새 위치는 근거 한 줄과 함께 적는다. upgrade.py가 기존 PLACES.md 머리말 중 옛 템플릿 문구 그대로인 줄만 새 문구로 바꾼다(template-history/places.txt). templateVersion 6에 포함
+- 이유: 사용자 "places에 등록하는건 물어보지말고 등록권한이있는 에이전트가 판단해서 필요시 자동등록하도록 해놔"
+- 정한 사람: 사용자, 확인된 위치 정의·근거 형식·머리말 교체는 매니저 판단(기준 검토·평가 ③ 통과)
+- 되돌리는 법: 문서 문구(SKILL.md 54, delegation.md 9·55, multi-session.md 20·34·43, work-session.md 14, commander SKILL.md 110·120·128, commander.md 30·43·50·54, pm/po/tpm.md, template/PLACES.md 머리말, README 93·116·148)를 "사용자가 확인한 위치만"으로, upgrade.py PLACES_HEAD_KEYS·places_head_swaps, build.py places 항목, places.txt 삭제
+
+## 2026-11-20 · 감독 세션은 /clear를 권하지 않고 자동 compact에 맡김
+- 결정: 감독 세션은 `/clear`를 권하지 않는다. 컨텍스트가 커지면 자동 compact에 맡기고 COMMAND.md 보드로 이어간다. commander.md 13행에 "war-room 지침·위임 전환 알림의 `/clear` 권유보다 이 줄이 먼저다"를 적어 mod 규칙 ⑤와의 충돌을 푼다. mod 문구(find.ts 규칙 ⑤, delegate.ts)는 그대로 둔다. README 110행에 감독 예외, delegation.md·SKILL.md·README 감독 절에도 같은 뜻. 아래 "/clear 주의" 항목을 보완한다
+- 이유: 사용자 "compact자동으로 되게하는걸로 충분할거같은데", "compact 뒤엔 세션그대로 유지된다"(compact는 세션 ID 유지, resume은 미확인)
+- 정한 사람: 사용자, 우선순위 문장은 매니저 판단(검증 중 지적 반영)
+- 되돌리는 법: commander.md 13행·README 110행 예외 구절·delegation.md 109행·SKILL.md 91·93행 문구를 /clear 주의 문구로 되돌림
+
+## 2026-11-20 · 감독 세션 /clear로 감독이 풀리는 것은 고치지 않고 주의로 알림
+- 결정: /clear하면 세션 ID가 바뀌어 감독이 풀리는 동작은 그대로 두고, war-room-commander SKILL.md 3절·README 감독 절·delegation.md(/clear 권유 때 감독 세션이면 "뒤에 감독 이어받기 필요"를 함께 알림)에 주의만 적는다. mod 문구(find.ts 규칙 ⑤, delegate.ts)의 /clear 권유는 고치지 않음(사용자 답 전, 매니저 권장은 그대로 둠)
+- 이유: 사용자 "문제라기보단 주의해서 쓰라하는게 맞겠다"
+- 정한 사람: 사용자
+- 되돌리는 법: 세 문서의 주의 문장 삭제
+
+## 2026-11-20 · 감독 템플릿도 war-room 템플릿 반영에 포함 (templateVersion 6)
+- 결정: `skills/war-room-commander/template/commander/**`를 바꾸면 war-room templateVersion(skills/war-room/template/config.json)을 1 올린다(이번 5 → 6). `upgrade.py`는 `war-room/commander/`가 있을 때만 commander.md·roles/{po,pm,tpm}.md의 `# 프로젝트별 규칙` 위쪽을 manager.md 방식으로 바꾼다(사용자 문장은 그 절로 옮김, 옛 템플릿 문장은 template-history/{commander,po,pm,tpm}.txt로 가려 버림). 디렉터리가 없으면 건너뛰고, 개별 파일이 없으면 만들지 않고 "없음, 건너뜀". 기존 감독 파일에 MARK가 없으면 끝에 빈 절이 있다고 보고 처리(manager·evaluator는 그대로 멈춤). frontmatter `model`은 evaluator처럼 프로젝트 값을 지킨다. 그 밖의 머리말 사용자 줄은 템플릿 값이 되며 check·apply 출력에 `머리말 줄 n개 버림(키)`로 표시(옛 템플릿 줄·보존 model 줄은 안 셈). COMMAND.md·commander/DECISIONS·LESSONS·TALLY는 다루지 않는다. po·pm·tpm 템플릿 끝에 `# 프로젝트별 규칙` 절 추가
+- 이유: v0.16.0 commander.md 변경이 이미 감독 자리를 만든 프로젝트에 갈 길이 없었다 (감독 템플릿에 버전·반영 경로가 없음)
+- 정한 사람: 사용자 (추천안 "나", "2도진행해"), MARK 없을 때 처리·model 보존·머리말 버림 표시는 매니저 판단(평가·검증 통과)
+- 되돌리는 법: upgrade.py의 COMMANDER_TEMPLATE·COMMANDER_FILES와 감독 처리, frontmatter_lines·dropped_frontmatter·dropped_note, build.py FILES 경로 목록, template-history 4개 txt, upgrade.md 3행·4절·5절, templateVersion 6 → 5
+
+## 2026-11-20 · war-room 템플릿 4 → 5 반영
+- 결정: `upgrade.py apply`로 반영. config.json templateVersion만 4 → 5, 롤 문서 옮김·버림 0줄, PLACES.md는 이미 있어 그대로
+- 이유: v0.15.0에서 템플릿이 5(PLACES.md 추가)가 됐는데 이 저장소는 4에 머물러 있었다
+- 정한 사람: 사용자 ("1진행하고")
+- 되돌리는 법: config.json templateVersion을 4로
+
 ## 2026-11-20 · 감독이 아닌 제출에서 이 세션의 보낸 표시를 지움
 - 결정: 메인 세션·슬래시 명령 아닌 제출에서 이 세션이 담당 감독이 아니면(해제·이어받기 대기·비어 있음·다른 id·id 줄 없음·commander 또는 war-room 꺼짐) `commanderSent`가 이 세션 id일 때 `''`로 지운다(`ifVersion`). 보드 없음·읽기 실패·상태를 못 읽음이면 지우지 않는다. commanderText는 절대 경로를 빼고 `war-room/COMMAND.md`로, 구현은 작업 세션(없으면 sonnet 작업 에이전트)·분석 등은 po·pm·tpm이라고 적는다(398바이트)
 - 뒤집는 것: 같은 날 "감독 세션을 세션 ID로…" 항목의 "해제 때 보낸 표시는 지우지 않음"

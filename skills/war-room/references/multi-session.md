@@ -17,7 +17,7 @@
 - 감독 세션은 배분·사용자 대화·위임만 한다. 구현·조사는 하 등급이라도 직접 하지 않는다. 요구 분석은 po, 보드 기록은 pm, 기계 확인·진행 검토는 tpm, 교차 판정은 `armory:evaluator`에 맡기고 결론만 받는다 (`war-room/commander/commander.md`).
 - 지시, 교차 판정 배정, 머지 관문은 감독이 정한다. 기록은 pm이 한다.
 - 메시지를 어떻게 옮기든(사용자가 붙여넣기, 세션 간 메시지 도구 `SendMessage`(열린 세션은 `ListAgents`, 사용자는 `/list-agents`), 이슈 댓글) 형식은 같다.
-- 새 작업 세션은 감독이 띄우지 않는다. 맞는 작업 세션이 보드에 없으면 감독은 임시 작업 에이전트(sonnet, 세션마다 동시 최대 4개)에 맡기고, 사용자 확인이 필요한 위치만 묻는다. 세션을 새로 열어야 하면 사용자에게 여는 명령을 안내한다 (`commander/commander.md` "세션이 없을 때").
+- 새 작업 세션은 감독이 띄우지 않는다. 맞는 작업 세션이 보드에 없으면 감독은 임시 작업 에이전트(sonnet, 세션마다 동시 최대 4개)에 맡기고, 못 찾은 위치만 사용자에게 묻는다. 세션을 새로 열어야 하면 사용자에게 여는 명령을 안내한다 (`commander/commander.md` "세션이 없을 때").
 - 지시 ID: `<이슈 키 또는 작업 이름>-<세션 약칭>-<번호>`. 예: `ORDER-12-API-3`. 보고·판정·기록은 이 ID로 잇는다.
 
 ## 2. 위치와 이어받기
@@ -31,7 +31,7 @@
 
 - 지휘 보드 `COMMAND.md`와 `war-room/commander/DECISIONS.md`·`war-room/commander/LESSONS.md`·`war-room/commander/TALLY.md`는 감독 롤 pm만 쓴다 (예외: 지정·이어받기·해제 때 `## 감독 자리`·`## 자리 이력`은 그 요청을 받은 세션). 누가 어느 절·파일을 언제 읽는지는 `war-room-commander` 스킬 6절. 작업 세션은 쓰지 않는다.
 - 감독 교훈을 `war-room/commander/commander.md` `# 프로젝트별 규칙` 절이나 `war-room/commander/roles/*.md`에 반영하는 일도 pm이 한다. 감독이 사용자에게 보여주고 승인받은 것만, 승인 줄을 위임 프롬프트에 넣어 넘긴다 (`war-room-commander` 스킬 5·6절). 감독 세션은 직접 고치지 않는다.
-- 감독 쪽은 작업 세션 매니저의 `war-room/STATUS.md`·`war-room/DECISIONS.md`·`war-room/LESSONS.md`를 쓰지 않는다. 예외: 장소 목록 `war-room/PLACES.md`는 감독 세션에서 pm이 쓴다 (사용자가 확인한 위치만. 작업 세션에서는 매니저가 쓴다). 감독 쪽 결정은 `war-room/commander/DECISIONS.md`, 교훈은 `war-room/commander/LESSONS.md`에 pm이 쓴다. 예외: 감독을 지정할 때 STATUS `## 진행 중`에 예전 형식 세션 줄(`세션 · 맡은 범위 · 위치 · …`)이 있으면, 보드로 옮긴 뒤 지정 요청을 받은 세션이 그 줄을 한 번 지운다 (`war-room-commander` 스킬 2절 8단계). 연결 워크트리 작업 세션도 쓰지 않는다 (`work-session.md` 2절).
+- 감독 쪽은 작업 세션 매니저의 `war-room/STATUS.md`·`war-room/DECISIONS.md`·`war-room/LESSONS.md`를 쓰지 않는다. 예외: 장소 목록 `war-room/PLACES.md`는 감독 세션에서 pm이 쓴다 (확인된 위치를 감독이 다시 쓸 위치로 판단해 넘기면 묻지 않고 쓴다. 작업 세션에서는 매니저가 쓴다). 감독 쪽 결정은 `war-room/commander/DECISIONS.md`, 교훈은 `war-room/commander/LESSONS.md`에 pm이 쓴다. 예외: 감독을 지정할 때 STATUS `## 진행 중`에 예전 형식 세션 줄(`세션 · 맡은 범위 · 위치 · …`)이 있으면, 보드로 옮긴 뒤 지정 요청을 받은 세션이 그 줄을 한 번 지운다 (`war-room-commander` 스킬 2절 8단계). 연결 워크트리 작업 세션도 쓰지 않는다 (`work-session.md` 2절).
 - 같은 내용을 두 군데 원본으로 두지 않는다.
 
 | 무엇 | 어디 |
@@ -40,7 +40,7 @@
 | 감독 자리, 세션 사이 진행·판정·위험·결정 ID, 이어받기 상태 | 지휘 보드 `COMMAND.md`. 화면이 필요하면 `status-dashboard` 진행판(JSON)으로 세션·지시 절을 옮기고 보드에는 경로만 둔다 |
 | 감독 쪽 결정 원문(사용자·감독 결정, 위임 범위) | `war-room/commander/DECISIONS.md` (pm). 점검이 남은 결정 ID만 보드 `## 점검할 결정` |
 | 감독 쪽 교훈(감독·감독 롤의 시행착오, 연결 워크트리 보고의 `겪은 문제` 중 남길 것) | `war-room/commander/LESSONS.md` (pm). `war-room/LESSONS.md`가 아니다 |
-| 반복해 쓰는 위치(파일·폴더, 깃 저장소·이슈, 지라 사이트·키·보드, 문서 URL, 자주 쓰는 명령) | `war-room/PLACES.md` (사용자가 확인한 위치만. 감독 세션은 pm, 작업 세션은 매니저가 쓴다). 감독 세션 자신은 읽지 않고 po가 찾는다 |
+| 반복해 쓰는 위치(파일·폴더, 깃 저장소·이슈, 지라 사이트·키·보드, 문서 URL, 자주 쓰는 명령) | `war-room/PLACES.md` (확인된 위치만, 묻지 않고 적는다. 감독 세션은 pm, 작업 세션은 매니저가 쓴다). 감독 세션 자신은 읽지 않고 po가 찾는다 |
 | 감독 지시의 일 종류별 횟수·맡은 롤·롤 제안 표시 | `war-room/commander/TALLY.md` (pm이 세고 po가 롤 제안). 작업 세션 `STATUS.md` `## 롤 후보`와 따로 센다 |
 | 세션 안의 시도·평가 | 작업 세션 보고 |
 

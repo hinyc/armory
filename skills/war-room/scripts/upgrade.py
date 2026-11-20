@@ -28,6 +28,14 @@ TEMPLATE = os.path.join(SKILL, 'template')
 HISTORY = os.path.join(SKILL, 'template-history')
 MARK = '# 프로젝트별 규칙'
 ROLES = ('manager', 'evaluator')
+# 감독 템플릿은 war-room-commander 스킬에 있다 (PLACES_REFS와 같은 SKILL 기준 해석). (프로젝트 war-room 기준 경로, 대조 목록 이름)
+COMMANDER_TEMPLATE = os.path.join(os.path.dirname(SKILL), 'war-room-commander', 'template', 'commander')
+COMMANDER_FILES = (
+    (os.path.join('commander', 'commander.md'), 'commander'),
+    (os.path.join('commander', 'roles', 'po.md'), 'po'),
+    (os.path.join('commander', 'roles', 'pm.md'), 'pm'),
+    (os.path.join('commander', 'roles', 'tpm.md'), 'tpm'),
+)
 # 템플릿 4판부터 maxAttempts 기본값이 3에서 1로 바뀌었다 (references/upgrade.md 4절)
 ATTEMPTS_RESET_BEFORE = 4
 OLD_MAX_ATTEMPTS = 3
@@ -65,6 +73,27 @@ def frontmatter_model(text):
         if line.startswith('model:'):
             return line
     return None
+
+
+def frontmatter_lines(text):
+    m = re.match(r'^---\n(.*?)\n---', text, re.S)
+    return [l.strip() for l in m.group(1).split('\n') if l.strip()] if m else []
+
+
+def dropped_frontmatter(upper, tupper, history, keep_model):
+    """새 템플릿으로 가면서 사라지는 프로젝트 frontmatter 줄의 키 목록.
+    새 템플릿에 같은 줄이 있거나, 옛 템플릿 줄(history)이거나, 지키는 model 줄이면 세지 않는다."""
+    current = set(frontmatter_lines(tupper))
+    out = []
+    for l in frontmatter_lines(upper):
+        if l in current or l in history or (keep_model and l.startswith('model:')):
+            continue
+        out.append(l.split(':')[0].strip() if ':' in l else l)
+    return out
+
+
+def dropped_note(keys):
+    return f", 머리말 줄 {len(keys)}개 버림({', '.join(keys)})" if keys else ''
 
 
 def set_model(text, model_line):
@@ -113,6 +142,24 @@ OLD_PLACES_TEMPLATE = (
 )
 
 
+# 머리말 줄의 시작 낱말: 옛 줄과 새 템플릿 줄을 짝짓는다
+PLACES_HEAD_KEYS = ('> - 쓰기:', '> - 못 찾거나', '> - 낡은 위치')
+
+
+def places_head_swaps(text):
+    """프로젝트 PLACES.md 머리말 줄 중 옛 템플릿 문구 그대로인 줄 → 새 템플릿 줄. [(옛 줄, 새 줄)].
+    옛 문구는 template-history/places.txt (build.py가 git 이력에서 모은다). 사용자가 고친 줄은 건드리지 않는다."""
+    hist_path = os.path.join(HISTORY, 'places.txt')
+    history = set(read(hist_path).split('\n')) if os.path.exists(hist_path) else set()
+    new = {k: l for k in PLACES_HEAD_KEYS for l in read(os.path.join(TEMPLATE, PLACES)).split('\n') if l.startswith(k)}
+    out = []
+    for line in text.split('\n'):
+        key = next((k for k in PLACES_HEAD_KEYS if line.startswith(k)), None)
+        if key and key in new and line.rstrip() != new[key] and line.rstrip() in history:
+            out.append((line.rstrip(), new[key]))
+    return out
+
+
 def place_template_lines():
     """템플릿 고정 문구: 현재 템플릿 PLACES.md와 예전 판 commander/PLACES.md의 줄 (앞뒤 공백 뺌)."""
     lines = {l.strip() for l in read(os.path.join(TEMPLATE, PLACES)).split('\n')}
@@ -154,7 +201,9 @@ def places_plan(wr):
     """장소 목록 이전 계획. 파일을 쓰지 않는다."""
     new, old = os.path.join(wr, PLACES), os.path.join(wr, OLD_PLACES)
     q = {'create': not os.path.exists(new), 'merge': os.path.exists(old), 'add': [], 'replace': [], 'keep': [],
-         'refs': [], 'stray': []}
+         'refs': [], 'stray': [], 'head': []}
+    if os.path.exists(new):
+        q['head'] = places_head_swaps(read(new))
     if q['merge']:
         base = read(new) if os.path.exists(new) else read(os.path.join(TEMPLATE, PLACES))
         have = {place_key(l): l for _, l in place_rows(base)}
@@ -175,10 +224,12 @@ def places_plan(wr):
 
 
 def places_report(q):
-    if not (q['create'] or q['merge'] or q['refs']):
+    if not (q['create'] or q['merge'] or q['refs'] or q['head']):
         print('PLACES.md: 그대로')
         return
     parts = ['새로 만듦'] if q['create'] else []
+    if q['head']:
+        parts.append(f"머리말 {len(q['head'])}줄 새 문구로")
     if q['merge']:
         parts.append(f"commander/PLACES.md에서 줄 {len(q['add'])}개 옮김, 같은 부르는 말 {len(q['replace'])}개 새 줄로 바꿈"
                      f", {len(q['keep'])}개는 PLACES.md 줄 유지, "
@@ -201,6 +252,11 @@ def places_apply(wr, q):
     if q['create']:
         shutil.copyfile(os.path.join(TEMPLATE, PLACES), new)
     checks = []
+    if q['head']:
+        swap = dict(q['head'])
+        write(new, '\n'.join(swap.get(l.rstrip(), l) for l in read(new).split('\n')))
+        left = places_head_swaps(read(new))
+        checks.append(('PLACES.md 머리말이 새 문구로 바뀜 (사용자가 고친 줄·데이터 줄은 그대로)', not left))
     if q['merge']:
         text = read(new)
         swap = dict(q['replace'])
@@ -278,7 +334,37 @@ def plan(wr):
             else:
                 p['moves'].append((role, s))
         target = set_model(tparts[0], frontmatter_model(parts[0])) if role == 'evaluator' else tparts[0]
-        p['roles'][role] = {'changed': parts[0].strip() != target.strip(), 'old': old}
+        p['roles'][role] = {'changed': parts[0].strip() != target.strip(), 'old': old,
+                            'fm': dropped_frontmatter(parts[0], tparts[0], history, role == 'evaluator')}
+
+    p['commander'] = {}
+    if os.path.isdir(os.path.join(wr, 'commander')):
+        for rel, name in COMMANDER_FILES:
+            path = os.path.join(wr, rel)
+            if not os.path.exists(path):
+                p['commander'][rel] = None
+                continue
+            text = read(path)
+            # MARK가 없으면 파일 끝에 빈 절이 있는 것으로 보고 전부를 템플릿 부분으로 다룬다
+            upper = (split_role(text) or (text, ''))[0]
+            tupper = split_role(read(os.path.join(COMMANDER_TEMPLATE, *rel.split(os.sep)[1:])))[0]
+            current = {counted(l) for l in tupper.split('\n')} - {None}
+            hist_path = os.path.join(HISTORY, f'{name}.txt')
+            history = set(read(hist_path).split('\n')) if os.path.exists(hist_path) else set()
+            old = 0
+            body = re.sub(r'^---\n.*?\n---\n?', '', upper, count=1, flags=re.S)
+            for line in body.split('\n'):
+                sl = counted(line)
+                if sl is None or sl in current:
+                    continue
+                if sl in history:
+                    old += 1
+                else:
+                    p['moves'].append((rel, sl))
+            # frontmatter의 model 값은 프로젝트 것을 지킨다 (evaluator와 같다)
+            target = set_model(tupper, frontmatter_model(upper))
+            p['commander'][rel] = {'changed': upper.strip() != target.strip(), 'old': old,
+                                   'fm': dropped_frontmatter(upper, tupper, history, True)}
 
     st = read(os.path.join(wr, 'STATUS.md')) if os.path.exists(os.path.join(wr, 'STATUS.md')) else ''
     tst = read(os.path.join(TEMPLATE, 'STATUS.md'))
@@ -305,7 +391,14 @@ def report(p):
         else:
             n = sum(1 for m in p['moves'] if m[0] == role)
             state = '템플릿 부분 교체' if r['changed'] else '템플릿 부분 같음'
-            print(f"roles/{role}.md: {state}, 옛 템플릿 문장 {r['old']}줄 버림, 사용자 문장 {n}줄 옮김")
+            print(f"roles/{role}.md: {state}, 옛 템플릿 문장 {r['old']}줄 버림, 사용자 문장 {n}줄 옮김{dropped_note(r['fm'])}")
+    for rel, r in p['commander'].items():
+        if r is None:
+            print(f'{rel}: 없음, 건너뜀')
+        else:
+            n = sum(1 for m in p['moves'] if m[0] == rel)
+            state = '템플릿 부분 교체' if r['changed'] else '템플릿 부분 같음'
+            print(f"{rel}: {state}, 옛 템플릿 문장 {r['old']}줄 버림, 사용자 문장 {n}줄 옮김{dropped_note(r['fm'])}")
     print('config.json: ' + (('키 추가 ' + ', '.join(p['config_add'])) if p['config_add'] else '추가할 키 없음')
           + (', templateVersion 갱신' if p['pv'] != p['tv'] else ''))
     if p['attempts_reset']:
@@ -317,7 +410,7 @@ def report(p):
     if p['moves']:
         print('옮길 사용자 문장 (--drop 번호로 뺄 수 있음):')
         for i, (role, s) in enumerate(p['moves'], 1):
-            print(f'  {i}. {role}.md: {s}')
+            print(f'  {i}. ' + (role if role in p['commander'] else f'{role}.md') + f': {s}')
 
 
 def git_dirty(root, wr):
@@ -355,6 +448,23 @@ def apply(wr, p, drop):
         write(path, new_upper + '\n' + new_proj + '\n')
         after = split_role(read(path))[1]
         checks.append((f'{role}.md 프로젝트별 규칙 보존', after.startswith(proj.rstrip('\n'))))
+
+    for rel, r in p['commander'].items():
+        if r is None:
+            continue
+        path = os.path.join(wr, rel)
+        text = read(path)
+        parts = split_role(text)
+        proj = parts[1] if parts else MARK
+        tupper, _ = split_role(read(os.path.join(COMMANDER_TEMPLATE, *rel.split(os.sep)[1:])))
+        moved = [sl for rl, sl in keep if rl == rel]
+        new_proj = proj.rstrip('\n')
+        if moved:
+            new_proj += '\n' + '\n'.join('- (템플릿 반영 때 옮김) ' + re.sub(r'^[-*]\s+', '', sl) for sl in moved)
+        new_upper = set_model(tupper, frontmatter_model(text))
+        write(path, new_upper + '\n' + new_proj + '\n')
+        after = split_role(read(path))[1]
+        checks.append((f'{rel} 프로젝트별 규칙 보존', after.startswith(proj.rstrip('\n'))))
 
     cfg_path = os.path.join(wr, 'config.json')
     cfg = json.loads(read(cfg_path))
@@ -428,7 +538,7 @@ def places_only(wr):
         return 3
     q = places_plan(wr)
     places_report(q)
-    if not (q['create'] or q['merge'] or q['refs']):
+    if not (q['create'] or q['merge'] or q['refs'] or q['head']):
         return 1
     backup = tempfile.mkdtemp(prefix='war-room-places-')
     for rel in (PLACES, OLD_PLACES) + PLACES_REFS:

@@ -1,6 +1,6 @@
 # 템플릿 업데이트 반영
 
-플러그인을 업데이트하면 스킬 규칙은 바로 바뀌지만, 설치 때 프로젝트에 복사한 파일(`roles/manager.md`, `roles/evaluator.md`, `config.json`, STATUS 절 제목, `.gitignore` 줄, `PLACES.md`)은 옛 내용 그대로 남는다. 감독 파일(`COMMAND.md`, `commander/`)은 스크립트가 다루지 않는다 (예외: 4절 "장소 목록 이전"). `war-room-commander` 스킬의 지정·이어받기 때 없는 파일만 복사되고 (나중에 더해진 `commander/TALLY.md` 같은 새 파일도 이때 들어간다), 이미 있던 보드는 같은 때 "보드 맞추기"로 템플릿 형식에 맞춰진다. 비교와 반영은 스크립트가 하고, 매니저는 결과 요약만 읽는다 (파일을 직접 열어 비교하지 않는다).
+플러그인을 업데이트하면 스킬 규칙은 바로 바뀌지만, 설치 때 프로젝트에 복사한 파일(`roles/manager.md`, `roles/evaluator.md`, `config.json`, STATUS 절 제목, `.gitignore` 줄, `PLACES.md`)은 옛 내용 그대로 남는다. 감독 파일 중 `commander/commander.md`와 `commander/roles/{po,pm,tpm}.md`는 `war-room/commander/`가 있을 때만 `# 프로젝트별 규칙` 위쪽을 스크립트가 바꾼다 (4절). `COMMAND.md`와 `commander/DECISIONS.md`·`LESSONS.md`·`TALLY.md`는 스크립트가 다루지 않는다 (예외: 4절 "장소 목록 이전"). `war-room-commander` 스킬의 지정·이어받기 때 없는 파일만 복사되고 (나중에 더해진 `commander/TALLY.md` 같은 새 파일도 이때 들어간다), 이미 있던 보드는 같은 때 "보드 맞추기"로 템플릿 형식에 맞춰진다. 비교와 반영은 스크립트가 하고, 매니저는 결과 요약만 읽는다 (파일을 직접 열어 비교하지 않는다).
 
 ## 1. 버전
 
@@ -31,20 +31,23 @@
 
 | 파일 | 템플릿으로 바꾸는 부분 | 그대로 두는 부분 |
 |---|---|---|
-| `roles/manager.md` | `# 프로젝트별 규칙` 제목 위 전부 (frontmatter 포함) | `# 프로젝트별 규칙` 절 전체 |
+| `roles/manager.md` | `# 프로젝트별 규칙` 제목 위 전부 (frontmatter 포함, `model` 줄도 템플릿 값) | `# 프로젝트별 규칙` 절 전체 |
 | `roles/evaluator.md` (있을 때만) | 같음 | `# 프로젝트별 규칙` 절, frontmatter `model` 값 |
+| `commander/commander.md`, `commander/roles/po.md`·`pm.md`·`tpm.md` (`war-room/commander/` 디렉터리가 있을 때만, 템플릿은 `war-room-commander` 스킬의 `template/commander/`) | `# 프로젝트별 규칙` 제목 위 전부 (frontmatter 포함, 단 `model` 줄은 프로젝트 값을 지키고 프로젝트에 `model` 줄이 없으면 템플릿 값) | `# 프로젝트별 규칙` 절 전체, frontmatter `model` 값. 디렉터리가 없으면 아무것도 만들지 않고, 디렉터리는 있는데 개별 파일이 없으면 그 파일은 만들지 않고 건너뛴다 (`commander/roles/po.md: 없음, 건너뜀`) |
 | `config.json` | 템플릿에만 있는 키 추가, `templateVersion`. 이전 규칙: 프로젝트 `templateVersion`(없으면 1)이 4보다 낮고 `maxAttempts`가 3이면 1로 바꾼다 (`check`가 `maxAttempts 3 → 1`로 보인다). 한계: 옛 기본값 3과 사용자가 일부러 적은 3을 구분하지 않고 1로 바꾼다. 원래 값을 쓰려면 반영 뒤 다시 적는다 | 이미 있는 키의 값(위 이전 규칙 제외, 3이 아닌 `maxAttempts`와 4 이상 프로젝트는 그대로), `roles` 전체 |
 | `STATUS.md` | 빠진 `## ` 절을 템플릿 순서 자리에 `- 없음`으로 추가, 절 제목 괄호 설명 | 모든 절의 내용 |
 | 프로젝트 `.gitignore` | `war-room/.eval/` 줄이 없으면 추가 | 나머지 |
-| `PLACES.md` | 없으면 템플릿으로 만든다. 아래 "장소 목록 이전" | 이미 있는 줄 (같은 부르는 말이 옛 파일에 더 늦은 확인한 날로 있을 때만 그 줄로 바꾼다) |
-| 사용자가 만든 롤, `DECISIONS.md`·`LESSONS.md` | 바꾸지 않는다 | 전부 |
+| `PLACES.md` | 없으면 템플릿으로 만든다. 머리말 `> - ` 줄이 옛 템플릿 문구 그대로면 새 문구로 바꾼다. 아래 "장소 목록 이전" | 이미 있는 줄 (같은 부르는 말이 옛 파일에 더 늦은 확인한 날로 있을 때만 그 줄로 바꾼다) |
+| 사용자가 만든 롤, `DECISIONS.md`·`LESSONS.md`, `COMMAND.md`, `commander/DECISIONS.md`·`LESSONS.md`·`TALLY.md` | 바꾸지 않는다 | 전부 |
 
 - 롤 문서의 `# 프로젝트별 규칙` 위쪽에서 새 템플릿에 없는 줄은 `template-history/<롤>.txt`(지난 템플릿 문장 목록)와 대조해 가른다. 목록에 있으면 옛 템플릿 문장이라 버리고, 없으면 사용자 문장이라 `# 프로젝트별 규칙` 절 끝에 `- (템플릿 반영 때 옮김) <원문>`으로 옮긴다.
+- 감독 파일(`commander/commander.md`, `commander/roles/{po,pm,tpm}.md`)도 같은 방식으로 가르고, 대조 목록은 `template-history/commander.txt`·`po.txt`·`pm.txt`·`tpm.txt`다. 옮긴 문장은 그 파일의 `# 프로젝트별 규칙` 절 끝에 붙는다. 예외: 기존 감독 파일에 `# 프로젝트별 규칙` 제목이 없으면(이 제목이 생기기 전에 설치한 `po.md`·`pm.md`·`tpm.md`) 멈추지 않고, 파일 끝에 빈 `# 프로젝트별 규칙` 절이 있는 것으로 보고 파일 전부를 템플릿 부분으로 다룬다. 목록에 없는 문장은 사용자 문장이라 새로 생긴 절로 옮긴다. `roles/manager.md`·`evaluator.md`에 제목이 없으면 멈추는 동작은 그대로다 (종료 코드 3).
+- frontmatter에 사용자가 직접 적은 줄(`description` 등)은 `model` 줄 말고는 옮겨지지 않고 템플릿 값으로 바뀐다. manager·evaluator와 감독 파일 모두 같다(evaluator·감독 파일은 `model` 줄을 지킨다). 버려지는 줄은 check·apply 출력의 그 파일 줄에 `머리말 줄 n개 버림(키)`로 보인다. 남기려면 `# 프로젝트별 규칙` 절에 적는다.
 - **장소 목록 이전** (예전 판은 감독 전용 `war-room/commander/PLACES.md`였다): 옛 파일이 있으면 데이터 줄(주석·`- 없음` 제외)을 `war-room/PLACES.md`의 같은 제목 절로 옮긴다 (절이 없으면 끝에 그 절을 만든다). 판단 기준은 첫 칸 `이름(부르는 말)`이다. 같은 첫 칸이 없으면 더한다. 있고 줄이 다르면 마지막 칸 `확인한 날`이 더 늦은 줄을 남기고, 같거나 날짜가 없으면 `war-room/PLACES.md` 줄을 남긴다. 바꾼 줄·버린 줄은 출력에 보인다. 옛 파일에 이 형식 밖의 의미 있는 줄(`* ` 불릿, `- ` 줄 아래 이어지는 줄, 절 밖 메모)이 있으면 옮기지 않고 "옮기지 못함"으로 보이며 ✗로 끝내고 옛 파일을 남긴다. 빈 줄·주석·`## ` 절 제목과 템플릿 고정 문구(현재 템플릿이나 예전 감독 템플릿과 같은 줄, `- 없음` 포함)는 세지 않는다. 옮길 줄이 다 들어갔고 옮기지 못한 줄이 없으면(✓) 옛 파일을 지운다. 그다음 `COMMAND.md`·`commander/commander.md`·`commander/roles/{po,pm,tpm}.md`에 남은 옛 경로 글자 `commander/PLACES.md`를 `war-room/PLACES.md`로 바꾼다 (나머지 문구는 그대로다). 감독 지정·이어받기 때는 같은 일을 `upgrade.py places <프로젝트>/war-room`이 버전과 상관없이 한다 (`war-room-commander` 스킬 2절).
 - 반영 전 사본을 임시 폴더에 남기고 경로를 출력한다. `evaluator.md`가 없으면 만들지 않는다 (평가 롤 추가 제안은 SKILL.md 배정 3번).
 
 ## 5. 템플릿을 고치는 쪽 (플러그인 개발)
 
-- `template/` 아래 파일을 바꾸면 `template/config.json`의 `templateVersion`을 1 올린다.
-- 기본 롤 템플릿을 바꾸면 커밋 뒤 저장소 루트에서 `python3 skills/war-room/template-history/build.py`를 돌려 지난 문장 목록을 다시 만든다. 빠지면 옛 템플릿 문장이 사용자 문장으로 잘못 옮겨진다.
-- 프로젝트가 채울 부분은 `# 프로젝트별 규칙` 절에만 둔다. 템플릿에 새 파일이나 기본 롤을 더하면 `scripts/upgrade.py`와 4절 표를 같이 고친다.
+- `template/` 또는 `skills/war-room-commander/template/commander/` 아래 파일을 바꾸면 `template/config.json`의 `templateVersion`을 1 올린다. 감독 템플릿은 `war-room-commander` 스킬에 있지만 반영 버전은 war-room 쪽 하나다.
+- 기본 롤 템플릿(감독 `commander.md`·`po.md`·`pm.md`·`tpm.md` 포함)을 바꾸면 커밋 뒤 저장소 루트에서 `python3 skills/war-room/template-history/build.py`를 돌려 지난 문장 목록을 다시 만든다. 빠지면 옛 템플릿 문장이 사용자 문장으로 잘못 옮겨진다.
+- 프로젝트가 채울 부분은 `# 프로젝트별 규칙` 절에만 둔다. 템플릿에 새 파일이나 기본 롤을 더하면(감독 템플릿 파일 포함) `scripts/upgrade.py`와 4절 표를 같이 고친다.

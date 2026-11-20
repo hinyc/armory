@@ -12,9 +12,16 @@ import subprocess
 
 ROOT = subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], text=True).strip()
 HERE = os.path.join(ROOT, 'skills/war-room/template-history')
+# 값이 목록이면 앞이 현재 경로, 뒤는 옛 경로 (git 이력을 모두 합친다)
 FILES = {
-    'manager': 'skills/war-room/template/roles/manager.md',
-    'evaluator': 'skills/war-room/template/roles/evaluator.md',
+    'manager': ['skills/war-room/template/roles/manager.md'],
+    'evaluator': ['skills/war-room/template/roles/evaluator.md'],
+    'commander': ['skills/war-room-commander/template/commander/commander.md',
+                  'skills/war-room-commander/template/commander.md'],
+    'po': ['skills/war-room-commander/template/commander/roles/po.md'],
+    'pm': ['skills/war-room-commander/template/commander/roles/pm.md'],
+    'tpm': ['skills/war-room-commander/template/commander/roles/tpm.md'],
+    'places': ['skills/war-room/template/PLACES.md'],
 }
 MARK = '# 프로젝트별 규칙'
 
@@ -30,15 +37,24 @@ def upper_lines(text):
     return out
 
 
-for name, path in FILES.items():
+def head_lines(text):
+    """PLACES.md 머리말의 `> - ` 줄 (upgrade.py가 옛 머리말을 알아보는 데 쓴다)."""
+    return {l.strip() for l in text.split('\n') if l.startswith('> - ')}
+
+
+for name, paths in FILES.items():
+    extract = head_lines if name == 'places' else upper_lines
     lines = set()
-    revs = subprocess.check_output(['git', '-C', ROOT, 'log', '--format=%H', '--', path], text=True).split()
-    for rev in revs:
-        shown = subprocess.run(['git', '-C', ROOT, 'show', f'{rev}:{path}'], capture_output=True, text=True)
-        if shown.returncode == 0:
-            lines |= upper_lines(shown.stdout)
-    with open(os.path.join(ROOT, path), encoding='utf-8') as f:
-        lines |= upper_lines(f.read())
+    for path in paths:
+        revs = subprocess.check_output(['git', '-C', ROOT, 'log', '--format=%H', '--', path], text=True).split()
+        for rev in revs:
+            shown = subprocess.run(['git', '-C', ROOT, 'show', f'{rev}:{path}'], capture_output=True, text=True)
+            if shown.returncode == 0:
+                lines |= extract(shown.stdout)
+        full = os.path.join(ROOT, path)
+        if os.path.exists(full):
+            with open(full, encoding='utf-8') as f:
+                lines |= extract(f.read())
     with open(os.path.join(HERE, f'{name}.txt'), 'w', encoding='utf-8') as f:
         f.write('\n'.join(sorted(lines)) + '\n')
     print(f'{name}.txt: {len(lines)} lines')

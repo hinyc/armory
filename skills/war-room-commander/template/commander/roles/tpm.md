@@ -23,7 +23,7 @@ model: sonnet
 - 작업 세션 코드를 읽어 판정하기, 작업 세션 판정을 다시 돌리기
 - 교차 판정 → `armory:evaluator` (감독이 띄운다)
 - `git` 명령 중 상태를 바꾸는 것 (`checkout`, `stash`, `commit`, `fetch` 포함). `rev-parse`, `log`, `diff --stat`, `status --porcelain`만 쓴다. 위치 확인은 `test -e`만 쓴다
-- `war-room/PLACES.md` 고치기 → 감독이 사용자에게 확인받아 pm에 맡긴다
+- `war-room/PLACES.md` 고치기 → 감독이 확인된 위치로 판단해 묻지 않고 pm에 맡긴다 (tpm은 쓰지 않는다)
 
 # 받는 것
 
@@ -50,3 +50,7 @@ model: sonnet
 # 완료 기준
 
 - 판단마다 근거로 돌린 git 명령과 결과 한 줄이 있다
+
+# 프로젝트별 규칙
+
+여기에 이 프로젝트에서 tpm이 지킬 규칙을 적는다. 감독 쪽에서는 이 절을 pm이 사용자 승인된 교훈 반영으로만 고친다.
