@@ -2,7 +2,7 @@
 
 > 매니저가 작업이 끝날 때마다 바뀐 절만 고친다. 통째로 다시 쓰지 않는다. 끝난 내용은 최근 완료에 한 줄만 남긴다.
 
-갱신: 2026-11-20 18:40
+갱신: 2026-11-20 18:55
 
 ## 진행 중 (형식: `롤 · 작업 · 등급 · 시도 n/최대 · 남은 실패 기준 · 기준이 적힌 곳(계획·설계 문서 경로)`)
 
@@ -62,7 +62,8 @@
 - 없음
 
 ## 최근 완료 (STATUS.md 전체 10KB 이하, 넘치면 오래된 것부터 archive/로)
-- 2026-11-20 · mod-dev + skill-author · 감독이 답 기다리는 질문을 보드 사람 확인 대기에 적고 감독 띠에 `? <무엇>` 줄(최대 3개)로 표시, templateVersion 7, 등급 상, 기준 검토 9건 반영, 평가 ③ 6/6 통과·경미 4건 고침, 에이전트 5개, validate 통과·test 166 pass, 커밋 전
+- 2026-11-20 · release · v0.18.0 릴리즈(536d800 feat, f67939d chore, 태그 v0.18.0, https://github.com/hinyc/armory/releases/tag/v0.18.0), 정형, validate 통과·test 166 pass, push는 매니저가 hinyc 전환 후 inyeol-hong 복귀. 이 저장소는 아직 템플릿 5(7 반영은 사용자 답 대기)
+- 2026-11-20 · mod-dev + skill-author · 감독이 답 기다리는 질문을 보드 사람 확인 대기에 적고 감독 띠에 `? <무엇>` 줄(최대 3개)로 표시, templateVersion 7, 등급 상, 기준 검토 9건 반영, 평가 ③ 6/6 통과·경미 4건 고침, 에이전트 5개, validate 통과·test 166 pass
 - 2026-11-20 · release · v0.17.0 릴리즈(0d0ddd7 feat, f59ee92 chore, 태그 v0.17.0, https://github.com/hinyc/armory/releases/tag/v0.17.0), 정형, validate 통과·test 156 pass, push는 매니저가 hinyc 전환 후 inyeol-hong 복귀. 이 저장소는 아직 템플릿 5(6 반영은 사용자 답 대기)
 - 2026-11-20 · skill-author + 작업 에이전트 · PLACES.md 묻지 않고 확인된 위치 자동 등록(매니저/pm 판단, 근거 한 줄, upgrade 머리말 교체), 등급 상, 기준 검토 반영 6건, 평가 ③ 6/6 통과·경미 2건 고침, 에이전트 5개, validate 통과·test 156 pass
 - 2026-11-20 · skill-author · 감독 세션 /clear 주의 문구(SKILL.md 3절·README·delegation.md), 코드 그대로, 등급 중, 검증 통과(경미 3건 다듬음), 에이전트 3개(+조사 1 중단), validate 통과·test 156 pass. 이어서 감독은 /clear 대신 자동 compact로 바꿈(사용자 확인), commander.md에 mod /clear 권유보다 먼저라는 우선순위 문장, README 감독 예외 구절, mod 문구는 그대로, 에이전트 +2(검증 1·skill-author 1), test 156 pass
