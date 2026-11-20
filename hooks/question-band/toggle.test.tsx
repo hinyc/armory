@@ -10,6 +10,7 @@ const BAND = {
   surface: 'terminal',
   props: {
     hasSurvey: false,
+    isCollapsed: false,
     isWorking: false,
     maxRows: 20,
     bodyColumns: 80,

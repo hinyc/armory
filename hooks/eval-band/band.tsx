@@ -10,7 +10,7 @@ const runMark = (run: EvalRun): string =>
 
 export function drawEvalBand(
   $: EngineInterface,
-  e: RenderInput,
+  e: RenderInput<'AbovePrompt'>,
   list: readonly EvalEntry[],
   beneath: RenderElement | null,
 ): RenderElement {

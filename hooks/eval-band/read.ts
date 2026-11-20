@@ -16,7 +16,7 @@ export async function readProgress($: EngineInterface): Promise<EvalEntry[]> {
       .map(entry => entry.name)
       .sort()
     const parsed = await Promise.all(
-      names.map(async name => {
+      names.map(async (name): Promise<EvalEntry | undefined> => {
         const text = await $.fs.read(`${dir}/${name}`).catch(() => undefined)
         const p = typeof text === 'string' ? parseProgress(text) : undefined
         return p === undefined ? undefined : { ...p, id: name }

@@ -5,9 +5,9 @@ import { register as registerEvalBand } from './eval-band/register'
 import { register as registerQuestionBand } from './question-band/register'
 import { register as registerWarRoomGuard } from './war-room-guard/register'
 
-export const register: Register = on => {
+export const register: Register = (on, options) => {
   // 평가 띠가 질문 띠를 감싸야(바깥) 질문 띠가 평가 띠를 다른 mod 그림으로 보고 양보하지 않는다.
-  registerEvalBand(on)
-  registerQuestionBand(on)
-  registerWarRoomGuard(on)
+  registerEvalBand(on, options)
+  registerQuestionBand(on, options)
+  registerWarRoomGuard(on, options)
 }

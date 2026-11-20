@@ -10,6 +10,7 @@ const BAND = {
   surface: 'terminal',
   props: {
     hasSurvey: false,
+    isCollapsed: false,
     isWorking: false,
     maxRows: 20,
     bodyColumns: 100,
@@ -63,7 +64,7 @@ function engineBeneath(on: On, files: Record<string, string>, beneathText?: stri
     const prefix = `${e.path}/`
     const entries = Object.keys(files)
       .filter(p => p.startsWith(prefix) && !p.slice(prefix.length).includes('/'))
-      .map(p => ({ name: p.slice(prefix.length), kind: 'file' as const, size: 1, mtimeMs: 0 }))
+      .map(p => ({ name: p.slice(prefix.length), kind: 'file' as const, size: 1, mtimeMs: 0, isLink: false }))
     if (entries.length === 0) throw new Error(`ENOENT: ${e.path}`)
     return { value: entries }
   })
@@ -137,7 +138,7 @@ function fakeEngine(files: Record<string, string>, cwd: () => string = () => '/p
         const prefix = `${path}/`
         const names = Object.keys(files).filter(p => p.startsWith(prefix) && !p.slice(prefix.length).includes('/'))
         if (names.length === 0) throw new Error(`ENOENT: ${path}`)
-        return names.map(p => ({ name: p.slice(prefix.length), kind: 'file', size: 1, mtimeMs: 0 }))
+        return names.map(p => ({ name: p.slice(prefix.length), kind: 'file', size: 1, mtimeMs: 0, isLink: false }))
       },
     },
   } as unknown as EngineInterface

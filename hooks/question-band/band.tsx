@@ -71,7 +71,7 @@ export function drawBand(
   return (
     <Box key={BAND_KEY} flexDirection="column">
       {question.summary.map((line, index) => (
-        <Text key={index} wrap="truncate-end" bold={index === 0}>
+        <Text key={String(index)} wrap="truncate-end" bold={index === 0}>
           {index === 0 ? '❯ ' : '  '}
           {line}
         </Text>

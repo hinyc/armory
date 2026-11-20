@@ -28,11 +28,18 @@ const INPUT = {
 
 const compose = async ($: Engine) => (await $.prompt.compose(INPUT)).sections
 
+/** i번째 항목. 없으면 테스트를 실패시킨다 (noUncheckedIndexedAccess 대응). */
+function at<T>(list: readonly T[], i: number): T {
+  const item = list[i]
+  if (item === undefined) throw new Error(`${i}번째 섹션이 없다`)
+  return item
+}
+
 test('config가 켜져 있으면 섹션을 맨 뒤에 session으로 추가한다', async ($, on) => {
   engineBeneath(on, '/proj', { '/proj/war-room/config.json': '{"roles":{"manager":true}}' })
   const sections = await compose($)
   expect(sections.map(s => s.id)).toEqual(['base', 'env', 'armory:war-room'])
-  const added = sections[2]
+  const added = at(sections, 2)
   expect(added.scope).toBe('session')
   expect(added.text).toContain('# war-room')
   expect(added.text).toContain('/proj/war-room')
@@ -65,7 +72,7 @@ test('상위 폴더의 war-room을 찾는다', async ($, on) => {
   engineBeneath(on, '/proj/packages/app', { '/proj/war-room/config.json': '{}' })
   const sections = await compose($)
   expect(sections.map(s => s.id)).toEqual(['base', 'env', 'armory:war-room'])
-  expect(sections[2].text).toContain('/proj/war-room')
+  expect(at(sections, 2).text).toContain('/proj/war-room')
 })
 
 test('JSON 형식이 틀려도 섹션을 넣고 오류를 던지지 않는다', async ($, on) => {
@@ -126,7 +133,7 @@ test('roles.commander가 true면 감독 자리 지침을 같은 섹션 끝에 �
   engineBeneath(on, '/proj', { '/proj/war-room/config.json': '{"roles":{"manager":true,"commander":true}}' })
   const sections = await compose($)
   expect(sections.map(s => s.id)).toEqual(['base', 'env', 'armory:war-room'])
-  const text = sections[2].text
+  const text = at(sections, 2).text
   expect(text).toContain('# war-room')
   expect(text).toContain('/proj/war-room/COMMAND.md')
   expect(text).toContain('armory:war-room-commander')
@@ -135,12 +142,12 @@ test('roles.commander가 true면 감독 자리 지침을 같은 섹션 끝에 �
 
 test('roles.commander가 없거나 false면 감독 자리 지침을 넣지 않는다', async ($, on) => {
   engineBeneath(on, '/proj', { '/proj/war-room/config.json': '{"roles":{"manager":true,"commander":false}}' })
-  expect((await compose($))[2].text).not.toContain('COMMAND.md')
+  expect(at(await compose($), 2).text).not.toContain('COMMAND.md')
 })
 
 test('config JSON이 깨지면 감독 자리 지침을 넣지 않는다', async ($, on) => {
   engineBeneath(on, '/proj', { '/proj/war-room/config.json': '{ 깨진 json' })
-  expect((await compose($))[2].text).not.toContain('COMMAND.md')
+  expect(at(await compose($), 2).text).not.toContain('COMMAND.md')
 })
 
 test('commanderText는 담당이면 배정 규칙보다 먼저이고 하 등급도 감독 롤에 맡긴다고 적는다', () => {
