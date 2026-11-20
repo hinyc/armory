@@ -10,6 +10,8 @@
 
 ## 다음 할 일
 
+- 경미(PLACES 이전): upgrade.py가 PLACES.md의 HTML 주석을 세지 않아, 단독 `<!-- 메모 -->`·주석 처리한 데이터 줄·줄 끝 주석이 ✗ 없이 사라짐(문서와는 일치). 주석에 내용이 있으면 stray로 볼지 결정
+
 - war-room-commander(감독 지정) 실사용 시험: 지정 → 세션 재시작 → "감독 이어받기" → 해제까지 돌려 보드만으로 이어지는지 확인. 감독 전용 롤 po·pm·tpm이 감독 대신 분석·기록·검토를 하는지, 감독이 하 등급도 직접 하지 않는지도 함께 확인 (validate 통과, test 101 통과). 경미: pm.md에 보드 맞추기 때 빠진 자리 두 절을 템플릿 그대로 넣는 예외가 없음(SKILL.md 2절에만), pm.md scope 인라인 주석은 다른 롤 관례와 다름
 - 실제 프로젝트에서 매니저 토큰이 15만 근처에서 압축되는지, 압축 뒤 바닥(이 환경 약 6~7만)과 응답당 평균 컨텍스트 재기
 - 사용자 확인: 기준 검토 도구 호출을 `maxTurns`로 강제하는 별도 에이전트(criteria-reviewer)를 만들지 여부. 기준 검토를 armory:evaluator haiku 한 번으로 정한 2026-11-13 결정을 바꾸게 돼 이번엔 만들지 않았고, maxTurns 지원도 공식 문서로 확인하지 못함
@@ -42,11 +44,10 @@
 - 없음
 
 ## 최근 완료 (STATUS.md 전체 10KB 이하, 넘치면 오래된 것부터 archive/로)
+- 2026-11-20 · release · v0.15.0 릴리즈 (PLACES 공용화, 템플릿 판 5), 등급 상, 시도 1번, 에이전트 1개, test 101 pass·validate 통과 (기능 커밋 530be99, 태그 커밋 56fa794, 릴리즈 노트 작성, gh 계정 복구됨)
+- 2026-11-20 · skill-author · PLACES를 war-room/PLACES.md로 옮김 (매니저·롤 에이전트가 읽고, 작업 세션은 매니저·감독 세션은 pm이 씀, 템플릿 판 5, upgrade.py places로 commander/PLACES.md 이전·옮기지 못한 줄 있으면 옛 파일 유지 후 종료 3), 등급 중, 시도 2번(1차 데이터 손실로 실패, 사용자 재시도 승인), 평가 2번 통과(경미 1: HTML 주석 무시), 에이전트 4개, 테스트 101
 - 2026-11-20 · release · v0.14.0 릴리즈 (감독 일 빈도 기록·롤 제안 TALLY.md, 엔진 2.1.329 타입 경고 해소), 등급 상, 시도 1번, 에이전트 1개, test 101 pass·validate 통과 (기능 커밋 ea1694a·d806c9f, 태그 커밋 fd016bf, 릴리즈 노트 작성, gh 계정 복구됨)
 - 2026-11-20 · skill-author · 감독 일 빈도 기록·롤 제안 (war-room/commander/TALLY.md, 지시마다 pm(haiku)이 일 종류별 횟수만 올림, 맡은 롤 없이 3회(role-split 신호 1)면 po(sonnet)가 롤 제안, 감독이 사용자에게 묻고 승인 시 작업 세션에 롤 추가 지시, 제안함·보류(2배에서 다시)·거절 표시로 반복 방지), 등급 중, 시도 1번, 평가 기준 8개 통과(경미 2: suggestRoles false 설명이 두 곳에 나뉨, 보류 n회 전달은 commander.md에만 자세함), 에이전트 2개, 테스트 101
 - 2026-11-20 · mod-dev · validate 타입 경고 해소 (엔진 2.1.329 strict·noUncheckedIndexedAccess·Register(on, options)·RenderInput 유니온·isCollapsed·isLink, 파일 8개 경고 43개 → 0, 기능 변경 없음, any·ts-ignore 없음, 남은 경고는 ICON_MISSING), 등급 중, 시도 1번, 평가 기준 6개 통과, 에이전트 2개, 테스트 101, 실제 화면 미확인, 커밋 ea1694a
 - 2026-11-20 · release · v0.13.0 릴리즈 (감독 전용 롤 po·pm·tpm, 감독 장소 목록 PLACES.md), 등급 상, 시도 1번, 에이전트 1개, test 101 pass·validate 통과 (기능 커밋 c4f0b09, 태그 커밋 f074d2b, 릴리즈 노트 작성, gh 계정 복구됨)
 - 2026-11-20 · skill-author · 감독 장소 목록 war-room/commander/PLACES.md (경로·저장소·이슈·지라·URL·명령 위치, 감독 전용, pm만 씀, po가 요청 표현을 실제 위치로 바꿈, tpm은 로컬 경로만 확인, 비밀 금지, 작업 세션은 안 읽음), 등급 중, 시도 1번, 평가 기준 7개 통과, 에이전트 2개, 테스트 101
-- 2026-11-20 · skill-author · 감독 전용 롤 (감독은 배분·사용자 대화·위임만, 하 등급도 직접 안 함; 감독 롤 po 요구 분석·pm 보드 기록(COMMAND.md만 씀)·tpm 진행 검토·git 확인, 기존 roles/ 롤 안 씀; 템플릿 template/commander/{commander.md,DECISIONS.md,LESSONS.md,roles/}, 설치 war-room/commander/; 감독 결정·교훈은 보드와 분리해 commander/DECISIONS.md·LESSONS.md(pm); 교훈 반영은 사용자 승인 줄 받은 pm; 예전 판 보드 맞추기; 보드 지시에 기준선 칸; commanderText 383바이트), 등급 상, 시도 1번 + 보완 3번(불일치 3건·교훈 자리, 결정·교훈 파일 분리, 빈 곳 3건), 평가 4번 통과, 에이전트 8개, 테스트 100 → 101, 커밋 048d6db
-- 2026-11-19 · release · v0.12.1 릴리즈 (기능 변경 없음: v0.12.0 기록 문서 + 버전 올림, 남은 변경 전부 커밋), 등급 상, 시도 1번, 에이전트 2개(릴리즈·확인), 별도 확인 에이전트가 명령 8개 통과 확인 (태그 커밋 0f4859d, 릴리즈 노트 작성, gh 계정 복구됨)
-- 2026-11-19 · release · v0.12.0 정형 릴리즈 (war-room-commander, question-band 수정), 등급 상, 시도 1번, 에이전트 1개 약 7만 토큰, 매니저 명령 확인 통과 (태그 커밋 e6a0faa, 릴리즈 노트 작성, gh 계정 복구됨)
