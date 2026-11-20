@@ -41,7 +41,7 @@ const TEMPLATE = `# 지휘 보드
 
 - 없음
 
-## 사람 확인 대기 (형식: \`무엇 · 왜 사람이 정하나 · 관련 지시 ID\`)
+## 사람 확인 대기 (형식: \`무엇 · 왜 사람이 답하나 · 관련 지시 ID\`)
 
 - 없음
 
@@ -85,6 +85,7 @@ test('parseBoard: 템플릿 그대로면 모두 0', () => {
     pending: 0,
     decisions: 0,
     human: 0,
+    questions: [],
     gateDone: 0,
     gateTotal: 6,
     updated: '–',
@@ -114,6 +115,23 @@ test('parseBoard: 통과는 세지 않고 요약 칸의 ` · `에 속지 않는�
 test('parseBoard: 점검할 결정·사람 확인', () => {
   const text = TEMPLATE.replace(/(## 점검할 결정[^\n]*\n\n)- 없음/, '$1- D1 · 제목 · d1\n- D2 · 제목 · d2').replace(/(## 사람 확인 대기[^\n]*\n\n)- 없음/, '$1- 무엇 · 왜 · d1')
   expect(parseBoard(text)).toMatchObject({ decisions: 2, human: 1 })
+})
+
+const withQuestions = (...lines: string[]) =>
+  FILLED().replace(/(## 사람 확인 대기[^\n]*\n\n)- 없음/, `$1${lines.map(l => `- ${l}`).join('\n')}`)
+
+test('parseBoard: 질문은 무엇 칸만 담고 ` · ` 없는 줄은 전체, 없음 줄은 뺀다', () => {
+  const text = withQuestions('A 승인 · 왜 · d1', 'B만 있는 줄', '없음', '없음 (형식 설명)')
+  expect(parseBoard(text)).toMatchObject({ human: 2, questions: ['A 승인', 'B만 있는 줄'] })
+})
+
+test('parseBoard: 질문 — 없음으로 시작하는 실제 질문은 버리지 않는다', () => {
+  const text = withQuestions('없음을 선택할지 · 왜 · –')
+  expect(parseBoard(text)).toMatchObject({ human: 1, questions: ['없음을 선택할지'] })
+})
+
+test('parseBoard: 질문 — 템플릿은 빈 목록', () => {
+  expect(parseBoard(TEMPLATE)?.questions).toEqual([])
 })
 
 test('parseBoard: 빈 문서는 undefined', () => {
@@ -267,4 +285,58 @@ test('띠: 질문(survey) 중이면 양보한다', async ($, on) => {
   expect(await ui.find({ type: 'Text', text: /◆ 감독/ })).toBeUndefined()
   expect(await ui.find({ type: 'Text', text: /질문 화면/ })).toBeDefined()
   await ui.unmount()
+})
+
+// ---- 질문 줄 ----
+const questionLines = (text: string) => text.split('\n').filter(line => line.startsWith('  ? '))
+
+async function drawn(on: On, $: Engine, board: string, base: typeof BAND | typeof NARROW = BAND): Promise<string> {
+  const clock = mock.clock(on, { now: NOW })
+  world(on, { files: files(board), id: ID, reads: [] })
+  const ui = await $.ui.mount(base)
+  await clock.advance(2000)
+  const text = await allText(ui)
+  await ui.unmount()
+  return text
+}
+
+test('띠: 질문 0개면 질문 줄이 없다', async ($, on) => {
+  const text = await drawn(on, $, FILLED())
+  expect(questionLines(text)).toEqual([])
+  expect(text).not.toContain('… 외')
+})
+
+test('띠: 질문 1개는 무엇 칸만 한 줄로 보인다', async ($, on) => {
+  const text = await drawn(on, $, withQuestions('배포 승인 · 되돌릴 수 없어서 · d1'))
+  expect(questionLines(text)).toEqual(['  ? 배포 승인'])
+  expect(text).not.toContain('되돌릴 수 없어서')
+})
+
+test('띠: 질문 3개는 모두 보이고 외 n개 줄은 없다', async ($, on) => {
+  const text = await drawn(on, $, withQuestions('Q1 · 왜 · d1', 'Q2 · 왜 · –', 'Q3'))
+  expect(questionLines(text)).toEqual(['  ? Q1', '  ? Q2', '  ? Q3'])
+  expect(text).not.toContain('… 외')
+})
+
+test('띠: 같은 문구 질문 2개도 두 줄 모두 보인다', async ($, on) => {
+  const text = await drawn(on, $, withQuestions('같은 질문 · 왜 · d1', '같은 질문 · 왜 · d2'))
+  expect(questionLines(text)).toEqual(['  ? 같은 질문', '  ? 같은 질문'])
+})
+
+test('띠: 질문 5개는 3개만 보이고 … 외 2개', async ($, on) => {
+  const text = await drawn(on, $, withQuestions('Q1 · 왜 · d1', 'Q2 · 왜 · d1', 'Q3 · 왜 · d1', 'Q4 · 왜 · d1', 'Q5 · 왜 · d1'))
+  expect(questionLines(text)).toEqual(['  ? Q1', '  ? Q2', '  ? Q3'])
+  expect(text).toContain('  … 외 2개')
+  expect(text).not.toContain('Q4')
+})
+
+test('띠: 좁은 화면(60칸)에서도 질문 줄은 보이고 2줄은 생략된다', async ($, on) => {
+  const text = await drawn(on, $, withQuestions('Q1 · 왜 · d1', 'Q2 · 왜 · d1'), NARROW)
+  expect(text).not.toContain('판정 대기')
+  expect(questionLines(text)).toEqual(['  ? Q1', '  ? Q2'])
+})
+
+test('띠: 없음을 고르자는 질문도 줄로 보인다', async ($, on) => {
+  const text = await drawn(on, $, withQuestions('없음을 선택할지 · 왜 · –'))
+  expect(questionLines(text)).toEqual(['  ? 없음을 선택할지'])
 })

@@ -53,6 +53,8 @@ export type CommanderBand = {
   pending: number
   decisions: number
   human: number
+  /** 사람 확인 대기 줄의 `무엇` 칸(첫 ` · ` 앞) 전부. 띠가 그릴 때 3개로 자른다. */
+  questions: readonly string[]
   gateDone: number
   gateTotal: number
   /** `MM-DD HH:MM` 또는 `–`. */

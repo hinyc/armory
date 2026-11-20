@@ -12,11 +12,20 @@ function section(lines: readonly string[], prefix: string): readonly string[] {
   return end < 0 ? rest : rest.slice(0, end)
 }
 
-/** 절의 `- ` 항목 본문. `없음`으로 시작하는 줄(빈 칸 표시)은 뺀다. */
+/** 빈 칸 표시: `없음`, `없음 (…)`. `없음을 …`처럼 이어지는 실제 항목은 아니다. */
+const isPlaceholder = (text: string): boolean => /^없음( · |\s*\(|$)/.test(text)
+
+/** 절의 `- ` 항목 본문. 빈 칸 표시 줄은 뺀다. */
 function items(lines: readonly string[]): readonly string[] {
   return lines
     .map(line => /^-\s+(.*\S)\s*$/.exec(line)?.[1])
-    .filter((text): text is string => text !== undefined && !text.startsWith('없음'))
+    .filter((text): text is string => text !== undefined && !isPlaceholder(text))
+}
+
+/** 질문 줄의 `무엇` 칸: 첫 ` · ` 앞. ` · `가 없으면 줄 전체. */
+const whatOf = (item: string): string => {
+  const cut = item.indexOf(' · ')
+  return (cut < 0 ? item : item.slice(0, cut)).trim()
 }
 
 function holderOf(seat: readonly string[]): string {
@@ -40,6 +49,7 @@ const directiveStatus = (item: string): string => item.split(' · ').at(-2)?.tri
 export function parseBoard(text: string): CommanderBand | undefined {
   if (text.trim() === '') return undefined
   const lines = text.split(/\r?\n/)
+  const human = items(section(lines, '사람 확인 대기'))
   const statuses = items(section(lines, '지시')).map(directiveStatus)
   const gate = section(lines, '머지 관문').filter(line => /^-\s*\[[ xX]\]/.test(line))
   return {
@@ -50,7 +60,8 @@ export function parseBoard(text: string): CommanderBand | undefined {
     blocked: statuses.filter(s => s === '막힘').length,
     pending: items(section(lines, '대기 중인 교차 판정')).length,
     decisions: items(section(lines, '점검할 결정')).length,
-    human: items(section(lines, '사람 확인 대기')).length,
+    human: human.length,
+    questions: human.map(whatOf),
     gateDone: gate.filter(line => /^-\s*\[[xX]\]/.test(line)).length,
     gateTotal: gate.length,
     updated: updatedOf(lines),
