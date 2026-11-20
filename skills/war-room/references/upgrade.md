@@ -1,6 +1,6 @@
 # 템플릿 업데이트 반영
 
-플러그인을 업데이트하면 스킬 규칙은 바로 바뀌지만, 설치 때 프로젝트에 복사한 파일(`roles/manager.md`, `roles/evaluator.md`, `config.json`, STATUS 절 제목, `.gitignore` 줄)은 옛 내용 그대로 남는다. 감독 파일(`COMMAND.md`, `commander/`)은 스크립트가 다루지 않는다. `war-room-commander` 스킬의 지정·이어받기 때 없는 파일만 복사되고 (나중에 더해진 `commander/PLACES.md` 같은 새 파일도 이때 들어간다), 이미 있던 보드는 같은 때 "보드 맞추기"로 템플릿 형식에 맞춰진다. 비교와 반영은 스크립트가 하고, 매니저는 결과 요약만 읽는다 (파일을 직접 열어 비교하지 않는다).
+플러그인을 업데이트하면 스킬 규칙은 바로 바뀌지만, 설치 때 프로젝트에 복사한 파일(`roles/manager.md`, `roles/evaluator.md`, `config.json`, STATUS 절 제목, `.gitignore` 줄)은 옛 내용 그대로 남는다. 감독 파일(`COMMAND.md`, `commander/`)은 스크립트가 다루지 않는다. `war-room-commander` 스킬의 지정·이어받기 때 없는 파일만 복사되고 (나중에 더해진 `commander/PLACES.md`·`commander/TALLY.md` 같은 새 파일도 이때 들어간다), 이미 있던 보드는 같은 때 "보드 맞추기"로 템플릿 형식에 맞춰진다. 비교와 반영은 스크립트가 하고, 매니저는 결과 요약만 읽는다 (파일을 직접 열어 비교하지 않는다).
 
 ## 1. 버전
 
