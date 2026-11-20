@@ -58,6 +58,7 @@ war-room 프로젝트에 **감독(commander) 자리**를 만들고, 그 자리�
 | `template/commander/commander.md` | `war-room/commander/commander.md` |
 | `template/commander/DECISIONS.md` | `war-room/commander/DECISIONS.md` (감독 결정) |
 | `template/commander/LESSONS.md` | `war-room/commander/LESSONS.md` (감독 교훈) |
+| `template/commander/PLACES.md` | `war-room/commander/PLACES.md` (감독 장소 목록) |
 | `template/commander/roles/po.md`·`pm.md`·`tpm.md` | `war-room/commander/roles/` 같은 이름 |
 
 - 예전 위치 이동: `war-room/roles/commander.md`가 있고 `war-room/commander/commander.md`가 없으면, 템플릿을 복사하지 않고 `mkdir -p war-room/commander && git mv war-room/roles/commander.md war-room/commander/commander.md`로 내용 그대로 옮긴다 (git이 추적하지 않는 파일이면 `mv`). 둘 다 있으면 옮기지 않고 둘 다 있다고 알린다. 옮겼으면 알림에 `예전 roles/commander.md를 commander/commander.md로 옮김`을 붙인다.
@@ -98,9 +99,10 @@ war-room 프로젝트에 **감독(commander) 자리**를 만들고, 그 자리�
 ## 5. 감독으로 일할 때
 
 - **문서**: 담당 세션은 `war-room/roles/manager.md` 대신 `war-room/commander/commander.md`를 따른다. 부딪히면 `commander/commander.md` 프로젝트별 규칙 → 이 스킬 → `multi-session.md` 순이다.
-- **직접 하는 것**: 배분 결정, 사용자 대화, 감독 롤에 맡기기, 시작할 때 보드 `## 감독 자리` 절만 읽어 담당 확인, 지정·이어받기·해제 때 `## 감독 자리`·`## 자리 이력` 기록. 이것뿐이다.
+- **직접 하는 것**: 배분 결정, 사용자 대화(po가 못 찾은 위치 묻기 포함), 감독 롤에 맡기기, 찾은 실제 위치를 `[감독 지시]`·위임 프롬프트에 넣기, 시작할 때 보드 `## 감독 자리` 절만 읽어 담당 확인, 지정·이어받기·해제 때 `## 감독 자리`·`## 자리 이력` 기록. 이것뿐이다.
 - **직접 하지 않는 것**: 구현·조사(하 등급 포함), 보드 갱신, git 확인. 각각 작업 세션·po·pm·tpm에 맡긴다. `war-room/roles/`의 롤(manager 포함)은 감독 세션에서 쓰지 않는다 (`multi-session.md` 2절).
-- **감독 롤**: `war-room/commander/roles/`의 po(요구 분석)·pm(보드 기록)·tpm(진행 검토). 맡기는 때와 흐름은 `commander/commander.md`. 교차 판정은 `armory:evaluator`(`multi-session.md` 5절).
+- **감독 롤**: `war-room/commander/roles/`의 po(요구 분석, 위치 찾기)·pm(보드·장소 목록 기록)·tpm(진행 검토, 로컬 경로 확인). 맡기는 때와 흐름은 `commander/commander.md`. 교차 판정은 `armory:evaluator`(`multi-session.md` 5절).
+- **위치가 빠진 요청** ("그 파일 옮겨", "그 깃 이슈 가져와", "지라 업데이트해"): po가 요청 속 표현으로 `war-room/commander/PLACES.md`를 grep해 실제 경로·키로 바꾼다. 못 찾거나 여러 개면 감독이 사용자에게 묻는다. 감독은 찾은 위치를 지시·위임 프롬프트에 그대로 넣고, 작업 세션과 작업을 맡은 하위 에이전트에게 이 파일을 읽게 하지 않는다 (읽는 것은 감독 롤뿐, 6절 표).
 - **운영**: 지시·보고·교차 판정·승인·머지 관문은 `war-room` 스킬 `references/multi-session.md`를 따른다. 세션에서 한 번 읽었으면 다시 읽지 않는다.
 - **보드 갱신 때**: 감독은 아래 일이 있을 때마다 pm에 맡긴다. pm은 그 절만 Edit로 고치고 맨 위 `갱신:` 시각을 바꾼다. 통째로 다시 쓰지 않는다.
   - 지시를 보냄 → `## 지시`에 줄 추가(기준선 칸은 지시 `## 기준선`의 커밋 해시, 칸이 없으면 `–`), `## 작업 세션`의 마지막 지시 ID. pm에 지시 원문을 준다
@@ -109,23 +111,24 @@ war-room 프로젝트에 **감독(commander) 자리**를 만들고, 그 자리�
   - 교차 판정을 띄우거나 끝냄 → `## 대기 중인 교차 판정`
   - 감독·사용자 결정이 나옴 → `war-room/commander/DECISIONS.md` 맨 위에 원문, 점검이 남은 감독 결정은 보드 `## 점검할 결정`에 결정 ID, 사람이 정해야 하면 `## 사람 확인 대기`에 제목
   - 감독 쪽 교훈이 생김 (감독·감독 롤의 판단 실수·막힌 일, 같은 이유의 두 번째 보완 지시, 연결 워크트리 보고의 `겪은 문제` 중 남길 것) → `war-room/commander/LESSONS.md` 맨 위에 항목
+  - 사용자가 위치를 확인함 (po가 못 찾은 표현의 답, 또는 tpm·작업 보고로 드러난 낡은 위치의 새 값·지움) → `사용자 확인: <부르는 말> → <위치> · <종류> · <쓰는 때>`를 프롬프트에 넣어 맡긴다. pm이 `war-room/commander/PLACES.md`의 맞는 절에 한 줄을 넣거나 고친다. 사용자가 확인하지 않은 값은 맡기지 않는다
   - 사용자가 감독 교훈 반영을 승인함 → 승인 줄(`사용자 승인: <교훈 날짜 · 요약> → <파일> <절>에 <넣을 문장>`)을 프롬프트에 넣어 맡긴다. pm이 `war-room/commander/commander.md` `# 프로젝트별 규칙` 절 또는 `war-room/commander/roles/<id>.md`(`pm.md` 포함)에 넣고 그 교훈을 archive로 옮긴다
   - 턴을 마칠 때 → `## 다시 시작하면 할 일`을 1~3줄로 맞춘다. 이 세션이 지금 끝나도 새 세션이 이 절과 보드만 읽고 이어갈 수 있어야 한다
 - **이어받기 점검**: pm이 보드를 고친 뒤 "새 세션이 보드만 읽고 지금 상태·다음 할 일·기다리는 것을 말할 수 있나"를 본다. 못 하면 빠진 것을 보드에 더한다.
 
 ## 6. 보드 쓰는 규칙
 
-- 보드와 `war-room/commander/DECISIONS.md`·`LESSONS.md`는 감독 롤 pm만 쓴다. 감독 세션 자신과 다른 세션은 쓰지 않는다. 예외: 2·3·4절의 지정·이어받기·해제 때 `## 감독 자리`·`## 자리 이력`은 그 요청을 받은 세션이 쓴다.
+- 보드와 `war-room/commander/DECISIONS.md`·`LESSONS.md`·`PLACES.md`는 감독 롤 pm만 쓴다. `PLACES.md`에는 사용자가 확인한 위치만 적고, 비밀(토큰·비밀번호·인증 정보)은 적지 않는다. 감독 세션 자신과 다른 세션은 쓰지 않는다. 예외: 2·3·4절의 지정·이어받기·해제 때 `## 감독 자리`·`## 자리 이력`은 그 요청을 받은 세션이 쓴다.
 - `war-room/commander/commander.md`의 `# 프로젝트별 규칙` 절과 `war-room/commander/roles/*.md`는 감독 쪽에서 사용자가 승인한 교훈 반영으로만 고치고, 그것도 pm이 쓴다. 감독은 승인 줄을 위임 프롬프트에 넣어 넘긴다 (5절). 승인 줄이 없으면 pm은 쓰지 않는다. 쓰기 권한이 있는 감독 롤은 pm 하나다.
 - 감독 쪽은 작업 세션 매니저의 `war-room/STATUS.md`·`war-room/DECISIONS.md`·`war-room/LESSONS.md`를 쓰지 않는다. 감독 쪽 결정·교훈은 이름이 같아도 항상 `war-room/commander/` 아래 파일이다. 예외: 2절 8단계에서 STATUS의 예전 형식 세션 줄을 한 번 지운다.
 - 읽는 범위 (작업 세션은 쓰지 않는다)
 
-| 누가 | `COMMAND.md` | `commander/DECISIONS.md` | `commander/LESSONS.md` |
-|---|---|---|---|
-| 감독 | `## 감독 자리`만 | 읽지 않는다 (결론은 롤에게 받는다) | 읽지 않는다 |
-| po | `## 작업 세션`, `## 지시`의 진행 중인 줄 | 요청의 세션 이름·대상 경로·키워드로 grep해 걸린 항목만 | 같은 방식으로 grep해 걸린 항목만 (지시에 넣을 교훈) |
-| pm | 전부 | 맨 위 항목에 더할 때 앞부분만, 뒤집을 때 그 항목을 grep | 전부 (정리 주기 판단) |
-| tpm | 전부 | 이어받기 요약 때 맨 위 5개 항목만. 그 밖에는 읽지 않는다 | 읽지 않는다 |
+| 누가 | `COMMAND.md` | `commander/DECISIONS.md` | `commander/LESSONS.md` | `commander/PLACES.md` |
+|---|---|---|---|---|
+| 감독 | `## 감독 자리`만 | 읽지 않는다 (결론은 롤에게 받는다) | 읽지 않는다 | 읽지 않는다 (찾은 위치는 po에게 받는다) |
+| po | `## 작업 세션`, `## 지시`의 진행 중인 줄 | 요청의 세션 이름·대상 경로·키워드로 grep해 걸린 항목만 | 같은 방식으로 grep해 걸린 항목만 (지시에 넣을 교훈) | 요청 속 위치 표현으로 grep해 걸린 줄만. 그런 표현이 없으면 읽지 않는다 |
+| pm | 전부 | 맨 위 항목에 더할 때 앞부분만, 뒤집을 때 그 항목을 grep | 전부 (정리 주기 판단) | 고칠 때만 (넣을 절과 부르는 말로 grep해 걸린 줄) |
+| tpm | 전부 | 이어받기 요약 때 맨 위 5개 항목만. 그 밖에는 읽지 않는다 | 읽지 않는다 | 위치 확인을 맡았을 때 그 경로 줄만 |
 
 - 원본 경계 (같은 내용을 두 곳에 두지 않는다)
 
@@ -134,6 +137,7 @@ war-room 프로젝트에 **감독(commander) 자리**를 만들고, 그 자리�
 | 감독 자리·위임 범위 요약·세션별 줄·지시 진행·교차 판정·점검할 결정 ID·머지 관문 | `COMMAND.md` |
 | 감독 쪽 결정 원문 (사용자·감독 결정, 위임받은 권한, 결정 ID) | `war-room/commander/DECISIONS.md` (pm). 점검이 남은 결정 ID만 보드 `## 점검할 결정` |
 | 감독 쪽 교훈 (감독·감독 롤의 시행착오, 연결 워크트리 보고의 `겪은 문제` 중 남길 것) | `war-room/commander/LESSONS.md` (pm). `war-room/LESSONS.md`가 아니다 |
+| 반복해 쓰는 위치 (파일·폴더, 깃 저장소·이슈, 지라 사이트·키·보드, 문서 URL, 자주 쓰는 명령) | `war-room/commander/PLACES.md` (pm). 지시에는 찾은 위치 값만 넣는다 |
 | 작업 세션 안의 롤 작업과 그 결정·교훈 (작업 세션 매니저 몫) | `war-room/STATUS.md`·`war-room/DECISIONS.md`·`war-room/LESSONS.md` |
 | 할 일·완료 조건 | 이슈 트래커 |
 

@@ -6,7 +6,7 @@
 
 ## 진행 중 (형식: `롤 · 작업 · 등급 · 시도 n/최대 · 남은 실패 기준 · 기준이 적힌 곳(계획·설계 문서 경로)`)
 
-- 없음
+- release · v0.13.0 릴리즈 (감독 전용 롤 + 감독 장소 목록) · 상 · 시도 1/1 · 기준 전부 · 위임 프롬프트(이 세션)
 
 ## 다음 할 일
 
@@ -42,7 +42,8 @@
 - 없음
 
 ## 최근 완료 (STATUS.md 전체 10KB 이하, 넘치면 오래된 것부터 archive/로)
-- 2026-11-20 · skill-author · 감독 전용 롤 (감독은 배분·사용자 대화·위임만, 하 등급도 직접 안 함; 감독 롤 po 요구 분석·pm 보드 기록(COMMAND.md만 씀)·tpm 진행 검토·git 확인, 기존 roles/ 롤 안 씀; 템플릿 template/commander/{commander.md,DECISIONS.md,LESSONS.md,roles/}, 설치 war-room/commander/; 감독 결정·교훈은 보드와 분리해 commander/DECISIONS.md·LESSONS.md(pm); 교훈 반영은 사용자 승인 줄 받은 pm; 예전 판 보드 맞추기; 보드 지시에 기준선 칸; commanderText 383바이트), 등급 상, 시도 1번 + 보완 3번(불일치 3건·교훈 자리, 결정·교훈 파일 분리, 빈 곳 3건), 평가 4번 통과, 에이전트 8개, 테스트 100 → 101, 커밋 전
+- 2026-11-20 · skill-author · 감독 장소 목록 war-room/commander/PLACES.md (경로·저장소·이슈·지라·URL·명령 위치, 감독 전용, pm만 씀, po가 요청 표현을 실제 위치로 바꿈, tpm은 로컬 경로만 확인, 비밀 금지, 작업 세션은 안 읽음), 등급 중, 시도 1번, 평가 기준 7개 통과, 에이전트 2개, 테스트 101
+- 2026-11-20 · skill-author · 감독 전용 롤 (감독은 배분·사용자 대화·위임만, 하 등급도 직접 안 함; 감독 롤 po 요구 분석·pm 보드 기록(COMMAND.md만 씀)·tpm 진행 검토·git 확인, 기존 roles/ 롤 안 씀; 템플릿 template/commander/{commander.md,DECISIONS.md,LESSONS.md,roles/}, 설치 war-room/commander/; 감독 결정·교훈은 보드와 분리해 commander/DECISIONS.md·LESSONS.md(pm); 교훈 반영은 사용자 승인 줄 받은 pm; 예전 판 보드 맞추기; 보드 지시에 기준선 칸; commanderText 383바이트), 등급 상, 시도 1번 + 보완 3번(불일치 3건·교훈 자리, 결정·교훈 파일 분리, 빈 곳 3건), 평가 4번 통과, 에이전트 8개, 테스트 100 → 101, 커밋 048d6db
 - 2026-11-19 · release · v0.12.1 릴리즈 (기능 변경 없음: v0.12.0 기록 문서 + 버전 올림, 남은 변경 전부 커밋), 등급 상, 시도 1번, 에이전트 2개(릴리즈·확인), 별도 확인 에이전트가 명령 8개 통과 확인 (태그 커밋 0f4859d, 릴리즈 노트 작성, gh 계정 복구됨)
 - 2026-11-19 · release · v0.12.0 정형 릴리즈 (war-room-commander, question-band 수정), 등급 상, 시도 1번, 에이전트 1개 약 7만 토큰, 매니저 명령 확인 통과 (태그 커밋 e6a0faa, 릴리즈 노트 작성, gh 계정 복구됨)
 - 2026-11-19 · mod-dev · question-band 양보 수정 (claude 2.1.328에서 AbovePrompt의 next가 다른 mod 그림을 알려주지 않아 테스트 실패 → AbovePromptList에서 다른 플러그인 행이 있으면 질문 띠 행 제거, 테스트 97+1실패 → 100), 등급 상, 평가 생략(사용자 선택), 에이전트 2개. 한계: 평가 띠가 감싼 행은 양보 못 함, hooks/register.ts 등록 순서 주석 점검 필요, 실제 화면 미확인

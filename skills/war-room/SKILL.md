@@ -11,7 +11,7 @@ description: Use BEFORE starting any task in a project that has a war-room/ fold
 >
 > **이 스킬은 세션에서 한 번만 부른다.** 대화가 압축돼 내용이 안 보일 때만 다시 부른다.
 
-`war-room/`에는 `config.json`, `roles/`(`manager.md`, 끌 수 있는 `evaluator.md`, 사용자 롤), `STATUS.md`(현재 상황), `DECISIONS.md`(결정), `LESSONS.md`(교훈), `archive/`, `.eval/`(진행 파일·스냅숏, 커밋 안 함)이 있다. 감독 자리를 지정하면 `COMMAND.md`(지휘 보드)와 `commander/`(`commander.md`, 감독 결정 `DECISIONS.md`·감독 교훈 `LESSONS.md`, 감독 전용 롤 `roles/po.md`·`pm.md`·`tpm.md`)가 생긴다 (`war-room-commander` 스킬). `commander/`는 매니저 배정 대상이 아니다. 비밀값·개인정보는 적지 않고 작업마다 로그를 남기지 않는다. 매니저는 메인 세션, 나머지 롤은 Agent 도구의 서브에이전트다 (`.claude/agents/` 안 씀). `war-room/`이 없는 프로젝트의 일반 작업에는 쓰지 않고, 묻지 않았는데 설치를 권하지도 않는다.
+`war-room/`에는 `config.json`, `roles/`(`manager.md`, 끌 수 있는 `evaluator.md`, 사용자 롤), `STATUS.md`(현재 상황), `DECISIONS.md`(결정), `LESSONS.md`(교훈), `archive/`, `.eval/`(진행 파일·스냅숏, 커밋 안 함)이 있다. 감독 자리를 지정하면 `COMMAND.md`(지휘 보드)와 `commander/`(`commander.md`, 감독 결정 `DECISIONS.md`·감독 교훈 `LESSONS.md`·감독 장소 목록 `PLACES.md`, 감독 전용 롤 `roles/po.md`·`pm.md`·`tpm.md`)가 생긴다 (`war-room-commander` 스킬). `commander/`는 매니저 배정 대상이 아니다. 비밀값·개인정보는 적지 않고 작업마다 로그를 남기지 않는다. 매니저는 메인 세션, 나머지 롤은 Agent 도구의 서브에이전트다 (`.claude/agents/` 안 씀). `war-room/`이 없는 프로젝트의 일반 작업에는 쓰지 않고, 묻지 않았는데 설치를 권하지도 않는다.
 
 ## 언제 무엇을 읽나
 
