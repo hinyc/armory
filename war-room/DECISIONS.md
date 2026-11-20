@@ -2,6 +2,13 @@
 
 > 되돌리기 어렵거나 나중에 "왜 이렇게 했지?"가 나올 결정만 적는다. 새 항목은 위에 추가한다. 지난 항목은 고치지 않고, 바뀌면 새 항목으로 뒤집는다.
 
+## 2026-11-20 · 장소 목록 PLACES.md를 war-room/에 두고 감독 없이도 씀
+- 결정: 장소 목록을 war-room/PLACES.md 한 곳에 둔다. 매니저와 롤 에이전트가 읽고, 쓰는 것은 작업 세션에서는 매니저, 감독 세션에서는 pm이다(사용자가 확인한 위치만, 비밀 금지). 롤 에이전트는 읽기만 한다. 연결 워크트리 작업 세션은 쓰지 않고 새 위치를 보고에 적는다. 템플릿 판을 5로 올리고, upgrade.py check·apply와 새 `places` 하위 명령이 war-room/commander/PLACES.md를 합쳐 옮긴다(첫 칸 이름으로 구분, 내용이 다르면 확인한 날이 늦은 줄, 같거나 없으면 war-room 쪽). 옮기지 못한 의미 있는 줄이 있으면 옛 파일을 지우지 않고 ✗·종료 3으로 끝낸다(다른 반영은 진행). HTML 주석은 세지 않는다. 같은 날 "감독 전용" 결정을 뒤집는다
+- 이유: 감독이 없는 프로젝트에서도 같은 위치를 매번 묻거나 추측하지 않게 하려고. 1차 구현이 `- ` 아닌 줄을 옮기지 않고 옛 파일을 지워 데이터 손실이 판정에서 드러나 삭제 조건을 막았다
+- 정한 사람: 사용자 (감독 없이도 사용, 매니저도 추가), 파일 위치·판 올림·합치기 규칙·실패 시 유지는 매니저·skill-author 판단
+- 되돌리는 법: skills/war-room/template/PLACES.md를 skills/war-room-commander/template/commander/로 되돌리고 templateVersion 4, upgrade.py의 places 관련 함수·하위 명령, SKILL.md 두 개·references(setup·upgrade·delegation·multi-session·work-session)·COMMAND.md·commander.md·po·pm·tpm·README 문장을 되돌린다
+- 영향: skills/war-room/{SKILL.md,template/{PLACES.md,config.json},scripts/upgrade.py,references/*}, skills/war-room-commander/**, README.md
+
 ## 2026-11-20 · 감독이 넘긴 일의 빈도를 세고 맡을 롤이 없으면 롤을 제안함
 - 결정: 감독이 `[감독 지시]`를 넘길 때마다 pm(haiku)이 war-room/commander/TALLY.md에 `일 종류 · 횟수 · 맡은 롤 · 마지막 날짜 · 제안` 줄의 횟수만 올린다. 맡은 롤 없이 3회(references/role-split.md 신호 1과 같음)에 이르면 po(sonnet)가 롤 이름·맡을 일·근거 줄·합침/새로를 내고, 감독이 사용자에게 묻는다. 승인되면 작업 세션에 `[감독 지시]`로 롤 추가를 넘기고 감독은 롤을 만들지 않는다. 제안함·보류(그때 횟수 2배에서 다시)·거절(다시 안 물음)로 반복 제안을 막는다. 작업 세션 STATUS `## 롤 후보`와는 따로 센다
 - 이유: 감독이 반복해 넘기는 일인데 맡을 롤이 없으면 매번 작업 세션 매니저가 대신 하게 된다. 기록은 가벼운 일이라 haiku, 제안은 롤 대조 판단이라 sonnet(사용자 지정)

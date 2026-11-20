@@ -11,7 +11,7 @@ description: Use BEFORE starting any task in a project that has a war-room/ fold
 >
 > **이 스킬은 세션에서 한 번만 부른다.** 대화가 압축돼 내용이 안 보일 때만 다시 부른다.
 
-`war-room/`에는 `config.json`, `roles/`(`manager.md`, 끌 수 있는 `evaluator.md`, 사용자 롤), `STATUS.md`(현재 상황), `DECISIONS.md`(결정), `LESSONS.md`(교훈), `archive/`, `.eval/`(진행 파일·스냅숏, 커밋 안 함)이 있다. 감독 자리를 지정하면 `COMMAND.md`(지휘 보드)와 `commander/`(`commander.md`, 감독 결정 `DECISIONS.md`·감독 교훈 `LESSONS.md`·감독 장소 목록 `PLACES.md`·감독 지시 빈도 `TALLY.md`, 감독 전용 롤 `roles/po.md`·`pm.md`·`tpm.md`)가 생긴다 (`war-room-commander` 스킬). `commander/`는 매니저 배정 대상이 아니다. 비밀값·개인정보는 적지 않고 작업마다 로그를 남기지 않는다. 매니저는 메인 세션, 나머지 롤은 Agent 도구의 서브에이전트다 (`.claude/agents/` 안 씀). `war-room/`이 없는 프로젝트의 일반 작업에는 쓰지 않고, 묻지 않았는데 설치를 권하지도 않는다.
+`war-room/`에는 `config.json`, `roles/`(`manager.md`, 끌 수 있는 `evaluator.md`, 사용자 롤), `STATUS.md`(현재 상황), `DECISIONS.md`(결정), `LESSONS.md`(교훈), `PLACES.md`(장소 목록: 반복해 쓰는 경로·저장소·이슈·지라 키·문서 URL·명령), `archive/`, `.eval/`(진행 파일·스냅숏, 커밋 안 함)이 있다. 감독 자리를 지정하면 `COMMAND.md`(지휘 보드)와 `commander/`(`commander.md`, 감독 결정 `DECISIONS.md`·감독 교훈 `LESSONS.md`·감독 지시 빈도 `TALLY.md`, 감독 전용 롤 `roles/po.md`·`pm.md`·`tpm.md`)가 생긴다 (`war-room-commander` 스킬). `commander/`는 매니저 배정 대상이 아니다. 비밀값·개인정보는 적지 않고 작업마다 로그를 남기지 않는다. 매니저는 메인 세션, 나머지 롤은 Agent 도구의 서브에이전트다 (`.claude/agents/` 안 씀). `war-room/`이 없는 프로젝트의 일반 작업에는 쓰지 않고, 묻지 않았는데 설치를 권하지도 않는다.
 
 ## 언제 무엇을 읽나
 
@@ -49,9 +49,9 @@ description: Use BEFORE starting any task in a project that has a war-room/ fold
 2. **담당 찾기** (다른 일보다 먼저. `manager`와 `commander/` 아래 감독 롤은 배정 대상이 아니다): 켜진 롤 파일의 `description`·`scope`·`하는 일`·`하지 않는 일`을 요청과 맞춘다. 하나가 맡는다 / 여러 롤에 걸친다 → 롤별로 나눈다 (다른 롤 scope 파일 2개 이하·합계 30줄 이하(바꿀 줄 합계)면 나누지 않고 주 롤이 범위 밖 수정(이유 보고)으로 한다) / 없다 → 알리고 하 등급만 매니저가 하며 (감독 세션은 하 등급도 직접 하지 않는다), 3개 이상 파일을 읽는 조사는 `Explore`에, 하가 아닌 구현은 임시 작업 에이전트(`general-purpose`, 담당 `manager`)에 맡긴다 (`delegation.md` 5절). 답만 하는 질문은 배정 없이 답한다.
 3. **등급·요구 수준**: 등급은 아래 "등급 판정"으로 정한다. 요구 기준은 사용자가 말한 수준, 없으면 매니저 초안이고 `명령 → 기대 결과`를 붙인다 (`verify.md` 1절). 중·상은 맡기기 전에 기준선을 잰다. 상은 기준 검토·수치 준비도 한다 (`verify-high.md`). 평가 롤이 꺼짐·없음이면 `eval-edge.md`.
 4. **알리기**: `→ <롤> 롤에 맡깁니다 (<요약>, 등급 <하|중|상>, 기준 n개, 최대 m회, 에이전트 n개 예정)` 다음 줄에 `정한 것: <결정>; <결정>` (`judgment.md` 2절). 예정보다 더 띄우면 이유 한 줄을 알린다.
-5. **맡기기**: Agent 도구, 종류 `general-purpose`, `model`은 롤의 `model`(없으면 생략), `description` `<롤 id>: <요약>`, `prompt`는 `delegation.md`의 고정 칸 템플릿. 병렬(상)은 공유 약속을 정할 수 있을 때만 동시에 띄운다 (`delegation.md` 4절). 구현 롤은 커밋하지 않는다 (예외: 릴리즈 담당 롤, 작업 세션은 `multi-session.md`).
+5. **맡기기**: 요청에 위치가 빠졌으면 ("그 파일", "그 이슈", "지라 업데이트") 요청 표현으로 `PLACES.md`를 grep해 걸린 줄의 실제 위치를 프롬프트 `## 범위`·`## 관련 파일`에 넣는다. 안 걸리거나 여러 줄이 걸리면 추측하지 않고 사용자에게 묻는다 (`delegation.md` 1절). Agent 도구, 종류 `general-purpose`, `model`은 롤의 `model`(없으면 생략), `description` `<롤 id>: <요약>`, `prompt`는 `delegation.md`의 고정 칸 템플릿. 병렬(상)은 공유 약속을 정할 수 있을 때만 동시에 띄운다 (`delegation.md` 4절). 구현 롤은 커밋하지 않는다 (예외: 릴리즈 담당 롤, 작업 세션은 `multi-session.md`).
 6. **검증 → 반복**: 보고의 `가정한 것`·`모호했던 것`을 먼저 읽는다 (`delegation.md` 2절). 구현한 에이전트와 매니저가 아닌 읽기 전용 에이전트(`armory:evaluator`)가 판정하며 방식은 아래 표다. 프롬프트에 `## 매니저가 정한 것` 칸을 넣는다 (`judgment.md` 4절). 띄우기 직전·직후 스냅숏을 비교하고 오래 걸리는 명령은 매니저가 한 번 돌려 기록한다 (`verify.md` 3·4절). `등급 올림`이나 사후 점검에 신호·조건이 있으면 그 등급으로 다시 판정한다. 범위 밖 수정은 이유를 확인한다. 주관 기준·⚠는 통과 뒤 사용자에게 확인받는다. 실패하면 `retry.md` (기본은 보고 뒤 질문).
-7. **문서 갱신** (매니저만. `state-docs.md`): `STATUS.md`는 **바뀐 절만** Edit로 고친다. 진행 중 줄은 `롤 · 작업 · 등급 · 시도 n/최대 · 남은 실패 기준 · 기준이 적힌 곳`이고 시도마다 스냅숏 전에 고친다. 결정은 `DECISIONS.md`에, 중·상에서 매니저가 정한 결정은 `## 점검할 결정`에 (`judgment.md` 3절), 막힌 일은 `LESSONS.md`에, 반복 신호는 `## 롤 후보`에 쌓는다 (`role-split.md`).
+7. **문서 갱신** (매니저만. `state-docs.md`): `STATUS.md`는 **바뀐 절만** Edit로 고친다. 진행 중 줄은 `롤 · 작업 · 등급 · 시도 n/최대 · 남은 실패 기준 · 기준이 적힌 곳`이고 시도마다 스냅숏 전에 고친다. 결정은 `DECISIONS.md`에, 중·상에서 매니저가 정한 결정은 `## 점검할 결정`에 (`judgment.md` 3절), 막힌 일은 `LESSONS.md`에, 반복 신호는 `## 롤 후보`에 쌓는다 (`role-split.md`). 사용자가 위치를 확인해 주면 `PLACES.md` 맞는 절에 `이름(부르는 말) · 종류 · 위치 · 쓰는 때 · 확인한 날` 한 줄을 넣는다 (같은 부르는 말 줄이 있으면 그 줄을 고친다. 사용자 확인 위치만, 비밀 금지).
    - **순서** (모든 등급): 구현(커밋 없음) → 검증·평가 → 스냅숏 비교 → 통과 → 문서 갱신 → 이어받기 점검 → 커밋(사용자가 요청하면 매니저가 구현과 문서를 한 커밋으로). 하 등급은 기계 검사·사후 점검 뒤에 갱신한다. 릴리즈는 정형이면 `verify-high.md` 7절, 아니면 `state-docs.md` 5절을 따른다.
    - **이어받기 점검**: 문서 갱신 뒤 매니저가 새 세션이 STATUS.md와 DECISIONS.md만 읽고 지금 상태·다음 할 일·점검할 결정을 말할 수 있는지 본다.
 8. **보고**: 결과·바뀐 것·남은 일, `매니저가 정한 것`(하 등급은 여기에만), 결정 점검("결정 n개 점검 통과", 재검토는 근거와 함께 묻는다). 중 명령 판정은 `점검할 결정`도 적는다.
@@ -89,6 +89,6 @@ description: Use BEFORE starting any task in a project that has a war-room/ fold
 
 - 담당 롤이 있는 일을 롤 에이전트 없이 매니저가 직접 하기 (예외: 사용자가 직접 하라고 했을 때, 하 등급 직접 처리 예외)
 - 자기 검토 금지: 구현한 에이전트나 매니저가 자기 결과를 판정하기 (예외: 하 등급 기계 검사, 중 명령 판정, 정형 릴리즈 확인, 이어받기 점검. 판단이 아니라 명령 결과 비교나 자기 기록 점검이다)
-- 롤 파일·config를 확인 없이 크게 바꾸기 (켜고 끄기는 예외), 서브에이전트에게 `war-room/` 문서 쓰게 하기 (평가 에이전트의 진행 파일, 릴리즈 담당 롤이 매니저가 갱신한 문서를 커밋에 넣는 것, 감독 롤 pm이 `COMMAND.md`(크기 정리 때 `archive/COMMAND-YYYY-MM.md` 포함)를 쓰는 것은 예외), 사후 점검 건너뛰기
+- 롤 파일·config를 확인 없이 크게 바꾸기 (켜고 끄기는 예외), 서브에이전트에게 `war-room/` 문서 쓰게 하기 (평가 에이전트의 진행 파일, 릴리즈 담당 롤이 매니저가 갱신한 문서를 커밋에 넣는 것, 감독 롤 pm이 `COMMAND.md`(크기 정리 때 `archive/COMMAND-YYYY-MM.md` 포함)·`PLACES.md`를 쓰는 것은 예외. 롤 에이전트는 `PLACES.md`를 읽을 수만 있다), 사후 점검 건너뛰기
 - 템플릿 반영을 묻지 않고 `war-room/` 파일 고치기, 프로젝트별 규칙·사용자 롤을 템플릿으로 덮기
 - 감독 세션이 사용자 대신 어려운 결정 승인하기 (`multi-session.md` 7절)

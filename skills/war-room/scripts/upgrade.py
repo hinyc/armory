@@ -4,10 +4,16 @@
 사용:
   python3 upgrade.py check <프로젝트 war-room 폴더>
   python3 upgrade.py apply <프로젝트 war-room 폴더> [--drop 1,3]
+  python3 upgrade.py places <프로젝트 war-room 폴더>
 
 check는 아무것도 쓰지 않고 요약만 출력한다. apply는 반영하고 기계 검사 결과를 출력한다.
 --drop은 check가 번호를 붙인 "옮길 사용자 문장" 중 버릴 번호다.
-종료 코드: 0 정상, 1 반영할 것 없음(버전 같음), 2 프로젝트가 더 새 버전, 3 멈춤(미커밋 변경·형식 오류).
+places는 버전과 상관없이 장소 목록만 옮긴다: war-room/PLACES.md가 없으면 만들고, 옛 commander/PLACES.md 줄을
+합친 뒤 지우고, 감독 파일의 옛 경로 글자를 바꾼다 (감독 지정·이어받기 때. apply도 같은 일을 한다).
+옛 파일에 형식 밖 줄(`* ` 불릿, 이어지는 줄, 절 밖 메모)이 있으면 옛 파일을 지우지 않고 그 줄을 보이고 ✗로 끝난다
+(apply는 다른 반영은 그대로 한다).
+종료 코드: 0 정상, 1 반영할 것 없음(버전 같음, places는 옮길 것 없음), 2 프로젝트가 더 새 버전,
+3 멈춤(미커밋 변경·형식 오류) 또는 검사 ✗(옛 장소 목록에 옮기지 못한 줄이 남음 등).
 """
 import json
 import os
@@ -86,6 +92,151 @@ def header(text):
     return [l for l in head.split('\n') if l.startswith('>')]
 
 
+PLACES = 'PLACES.md'
+OLD_PLACES = os.path.join('commander', 'PLACES.md')
+# 장소 목록 경로를 가리키는 감독 파일 (옛 경로 글자를 새 경로로 바꾼다)
+PLACES_REFS = ('COMMAND.md', os.path.join('commander', 'commander.md'),
+               os.path.join('commander', 'roles', 'po.md'), os.path.join('commander', 'roles', 'pm.md'),
+               os.path.join('commander', 'roles', 'tpm.md'))
+# 예전 판 감독 템플릿 commander/PLACES.md에만 있던 고정 문구 (현재 템플릿 PLACES.md와 다른 줄)
+OLD_PLACES_TEMPLATE = (
+    '# 감독 장소 목록',
+    '> 이 프로젝트에서 반복해 쓰는 위치(파일·폴더 경로, 깃 저장소·이슈, 지라 사이트·프로젝트 키·보드, 문서 URL, '
+    '자주 쓰는 명령)의 원본이다. 감독이 "그 파일 옮겨", "그 깃 이슈 가져와", "지라 업데이트해"처럼 위치가 빠진 요청을 받으면, '
+    'po가 요청 속 표현으로 이 파일을 grep해 걸린 줄만 읽고 실제 위치로 바꾼다. 감독은 이 파일을 읽지 않고, 찾은 실제 위치를 '
+    '`[감독 지시]`·위임 프롬프트에 넣는다. 작업 세션과 작업을 맡은 하위 에이전트는 이 파일을 읽지 않는다 '
+    '(읽는 것은 감독 롤 po·pm·tpm뿐이고 범위는 `war-room-commander` 스킬 6절).',
+    '> - 쓰기: 감독 롤 pm(`commander/roles/pm.md`)만 쓴다. 사용자가 확인한 위치만 적는다. 추측한 값은 적지 않는다.',
+    '> - 못 찾거나 여러 줄이 걸리면 감독이 사용자에게 묻고, 답을 받으면 pm이 적는다.',
+    '> - 낡은 위치(경로 없음·접근 실패)는 tpm이나 작업 보고로 알게 되면 감독이 사용자에게 확인하고, '
+    '확인받은 뒤 pm이 고친다. 고친 줄은 `확인한 날`을 바꾼다.',
+)
+
+
+def place_template_lines():
+    """템플릿 고정 문구: 현재 템플릿 PLACES.md와 예전 판 commander/PLACES.md의 줄 (앞뒤 공백 뺌)."""
+    lines = {l.strip() for l in read(os.path.join(TEMPLATE, PLACES)).split('\n')}
+    return lines | set(OLD_PLACES_TEMPLATE)
+
+
+def place_stray(text):
+    """옮길 수 없는 의미 있는 줄: 데이터 줄·빈 줄·주석·`## ` 절 제목·템플릿 고정 문구가 아닌 줄.
+    `* ` 불릿, 데이터 줄 아래 이어지는 줄, 절 밖 메모가 여기 걸린다. 걸리면 옛 파일을 지우지 않는다."""
+    rows = {l for _, l in place_rows(text)}
+    fixed = place_template_lines()
+    text = re.sub(r'<!--.*?-->', '', text, flags=re.S)
+    return [l.rstrip() for l in text.split('\n')
+            if l.strip() and not l.startswith('## ') and l.rstrip() not in rows and l.strip() not in fixed]
+
+
+def place_rows(text):
+    """장소 목록의 데이터 줄: [(절 제목, 줄)]. 주석과 `- 없음`은 뺀다."""
+    text = re.sub(r'<!--.*?-->', '', text, flags=re.S)
+    rows, sec = [], None
+    for line in text.split('\n'):
+        if line.startswith('## '):
+            sec = line[3:].strip()
+        elif sec and line.startswith('- ') and line.strip() != '- 없음':
+            rows.append((sec, line.rstrip()))
+    return rows
+
+
+def place_key(line):
+    return line[2:].split(' · ')[0].strip()
+
+
+def place_date(line):
+    last = line.split(' · ')[-1].strip()
+    return last if re.fullmatch(r'\d{4}-\d{2}-\d{2}', last) else ''
+
+
+def places_plan(wr):
+    """장소 목록 이전 계획. 파일을 쓰지 않는다."""
+    new, old = os.path.join(wr, PLACES), os.path.join(wr, OLD_PLACES)
+    q = {'create': not os.path.exists(new), 'merge': os.path.exists(old), 'add': [], 'replace': [], 'keep': [],
+         'refs': [], 'stray': []}
+    if q['merge']:
+        base = read(new) if os.path.exists(new) else read(os.path.join(TEMPLATE, PLACES))
+        have = {place_key(l): l for _, l in place_rows(base)}
+        q['stray'] = place_stray(read(old))
+        for sec, line in place_rows(read(old)):
+            cur = have.get(place_key(line))
+            if cur is None:
+                q['add'].append((sec, line))
+                have[place_key(line)] = line
+            elif cur != line:
+                # 같은 부르는 말: 확인한 날이 더 늦은 줄을 남긴다. 같거나 모르면 war-room/PLACES.md 줄을 남긴다
+                (q['replace'] if place_date(line) > place_date(cur) else q['keep']).append((cur, line))
+    for rel in PLACES_REFS:
+        path = os.path.join(wr, rel)
+        if os.path.exists(path) and 'commander/PLACES.md' in read(path):
+            q['refs'].append(rel)
+    return q
+
+
+def places_report(q):
+    if not (q['create'] or q['merge'] or q['refs']):
+        print('PLACES.md: 그대로')
+        return
+    parts = ['새로 만듦'] if q['create'] else []
+    if q['merge']:
+        parts.append(f"commander/PLACES.md에서 줄 {len(q['add'])}개 옮김, 같은 부르는 말 {len(q['replace'])}개 새 줄로 바꿈"
+                     f", {len(q['keep'])}개는 PLACES.md 줄 유지, "
+                     + (f"옮기지 못한 줄 {len(q['stray'])}개라 commander/PLACES.md 남김" if q['stray']
+                        else 'commander/PLACES.md 지움'))
+    if q['refs']:
+        parts.append('감독 파일의 옛 경로 글자 바꿈: ' + ', '.join(q['refs']))
+    print('PLACES.md: ' + '; '.join(parts))
+    for cur, line in q['replace']:
+        print(f'  바꿈: {cur}  →  {line}')
+    for cur, line in q['keep']:
+        print(f'  버림 (확인한 날이 같거나 이르다): {line}  (남긴 줄: {cur})')
+    for line in q['stray']:
+        print(f'  옮기지 못함 (형식 밖 줄. 손으로 war-room/PLACES.md에 옮긴 뒤 commander/PLACES.md를 지운다): {line}')
+
+
+def places_apply(wr, q):
+    """장소 목록을 war-room/PLACES.md로 만들고 옛 commander/PLACES.md를 합친다. (이름, 통과) 검사를 돌려준다."""
+    new, old = os.path.join(wr, PLACES), os.path.join(wr, OLD_PLACES)
+    if q['create']:
+        shutil.copyfile(os.path.join(TEMPLATE, PLACES), new)
+    checks = []
+    if q['merge']:
+        text = read(new)
+        swap = dict(q['replace'])
+        text = '\n'.join(swap.pop(l.rstrip(), l) for l in text.split('\n'))
+        for sec, line in q['add']:
+            lines = text.split('\n')
+            head = next((i for i, l in enumerate(lines) if l.startswith('## ') and l[3:].strip() == sec), None)
+            if head is None:
+                text = text.rstrip('\n') + f'\n\n## {sec}\n\n{line}\n'
+                continue
+            end = next((i for i in range(head + 1, len(lines)) if lines[i].startswith('## ')), len(lines))
+            body = [i for i in range(head + 1, end) if lines[i].startswith('- ')]
+            if len(body) == 1 and lines[body[0]].strip() == '- 없음':
+                lines[body[0]] = line
+            elif body:
+                lines.insert(body[-1] + 1, line)
+            else:
+                lines.insert(head + 1, '\n' + line)
+            text = '\n'.join(lines)
+        write(new, text)
+        merged = {l for _, l in place_rows(read(new))}
+        lost = [l for _, l in place_rows(read(old)) if l not in merged and l not in {n for _, n in q['keep']}]
+        checks.append(('commander/PLACES.md 줄이 PLACES.md에 다 있음 (버린 줄 제외)', not lost))
+        stray = place_stray(read(old))
+        if stray:
+            checks.append((f'commander/PLACES.md에 옮기지 못한 줄 없음 ({len(stray)}개 있어 옛 파일을 남김. '
+                           '위 "옮기지 못함" 줄을 손으로 옮긴 뒤 옛 파일을 지운다)', False))
+        if not lost and not stray:
+            os.remove(old)
+    for rel in q['refs']:
+        path = os.path.join(wr, rel)
+        write(path, read(path).replace('war-room/commander/PLACES.md', 'war-room/PLACES.md')
+              .replace('commander/PLACES.md', 'war-room/PLACES.md'))
+    return checks
+
+
 def plan(wr):
     """비교 결과. 파일을 쓰지 않는다."""
     p = {'notes': [], 'moves': [], 'roles': {}, 'blocked': []}
@@ -142,6 +293,7 @@ def plan(wr):
     gi = os.path.join(root, '.gitignore')
     p['gitignore_add'] = not (os.path.exists(gi) and 'war-room/.eval/' in read(gi))
     p['root'] = root
+    p['places'] = places_plan(wr)
     return p
 
 
@@ -161,6 +313,7 @@ def report(p):
     print(f"STATUS.md: 절 추가 {len(p['status_add'])}개, 절 제목 설명 갱신 {len(p['status_retitle'])}개"
           + (', 머리말 설명 갱신' if p['status_header'] else ''))
     print('.gitignore: ' + ('war-room/.eval/ 추가' if p['gitignore_add'] else '그대로'))
+    places_report(p['places'])
     if p['moves']:
         print('옮길 사용자 문장 (--drop 번호로 뺄 수 있음):')
         for i, (role, s) in enumerate(p['moves'], 1):
@@ -259,6 +412,8 @@ def apply(wr, p, drop):
         old = read(gi) if os.path.exists(gi) else ''
         write(gi, old + ('' if old.endswith('\n') or not old else '\n') + 'war-room/.eval/\n')
 
+    checks += places_apply(wr, p['places'])
+
     print(f"반영함: 템플릿 {p['pv']} → {p['tv']}, 사용자 문장 {len(keep)}줄 옮김, {len(p['moves']) - len(keep)}줄 버림")
     for name, ok in checks:
         print(('✓ ' if ok else '✗ ') + name)
@@ -266,11 +421,35 @@ def apply(wr, p, drop):
     return 0 if all(ok for _, ok in checks) else 3
 
 
+def places_only(wr):
+    """버전과 상관없이 장소 목록만 옮긴다 (감독 지정·이어받기 때)."""
+    if not os.path.isdir(wr):
+        print(f'멈춤: {wr} 폴더가 없음')
+        return 3
+    q = places_plan(wr)
+    places_report(q)
+    if not (q['create'] or q['merge'] or q['refs']):
+        return 1
+    backup = tempfile.mkdtemp(prefix='war-room-places-')
+    for rel in (PLACES, OLD_PLACES) + PLACES_REFS:
+        src = os.path.join(wr, rel)
+        if os.path.exists(src):
+            os.makedirs(os.path.dirname(os.path.join(backup, rel)), exist_ok=True)
+            shutil.copyfile(src, os.path.join(backup, rel))
+    checks = places_apply(wr, q)
+    for name, ok in checks:
+        print(('✓ ' if ok else '✗ ') + name)
+    print(f'반영 전 사본: {backup}')
+    return 0 if all(ok for _, ok in checks) else 3
+
+
 def main():
-    if len(sys.argv) < 3 or sys.argv[1] not in ('check', 'apply'):
+    if len(sys.argv) < 3 or sys.argv[1] not in ('check', 'apply', 'places'):
         print(__doc__)
         return 3
     wr = os.path.abspath(sys.argv[2])
+    if sys.argv[1] == 'places':
+        return places_only(wr)
     p = plan(wr)
     if p['blocked']:
         for b in p['blocked']:

@@ -13,7 +13,7 @@ war-room이 켜진 프로젝트에서는 armory의 `war-room-guard` mod가 이 �
 
 1. 프로젝트 루트를 확인한다 (`git rev-parse --show-toplevel`, 없으면 현재 폴더).
 2. 이 스킬의 `template/`을 `<루트>/war-room/`으로 복사한다. 이미 있는 파일은 덮어쓰지 않는다.
-   - `config.json`, `roles/manager.md`, `roles/evaluator.md`, `STATUS.md`, `DECISIONS.md`, `LESSONS.md`, `archive/.gitkeep`
+   - `config.json`, `roles/manager.md`, `roles/evaluator.md`, `STATUS.md`, `DECISIONS.md`, `LESSONS.md`, `PLACES.md`(장소 목록), `archive/.gitkeep`
    - 프로젝트 `.gitignore`에 `war-room/.eval/`가 없으면 한 줄 추가한다 (평가 진행 파일은 커밋하지 않는다).
 3. 프로젝트 규모(반복되는 일의 종류, 영역 수)에 맞춰 필요한 만큼 롤 후보를 제안한다. 개수 제한은 없다. 겹치는 후보는 합치거나 뺀다 (`references/role-discovery.md`).
    - 이 프로젝트의 이전 세션·메모리·CLAUDE.md·git 이력이 있으면 수집 sonnet → 제안 opus 서브에이전트 순서로 읽기 전용으로 반복된 일의 사실을 모아 후보를 만든다. 메인 세션은 jsonl을 직접 읽지 않는다.

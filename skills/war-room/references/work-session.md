@@ -11,7 +11,7 @@
 
 ## 2. 문서
 
-- 연결 워크트리에서 돌면(`git rev-parse --git-dir`와 `git rev-parse --git-common-dir` 결과가 다르면) 워크트리 안의 `war-room/` 문서(STATUS·DECISIONS·LESSONS)를 쓰지 않는다. 정한 것·겪은 문제·시도 상태는 보고에 적고 감독 쪽 pm이 지휘 보드에 옮긴다 (남길 겪은 문제는 `war-room/commander/LESSONS.md`). 템플릿 반영 질문도 하지 않는다.
+- 연결 워크트리에서 돌면(`git rev-parse --git-dir`와 `git rev-parse --git-common-dir` 결과가 다르면) 워크트리 안의 `war-room/` 문서(STATUS·DECISIONS·LESSONS·PLACES)를 쓰지 않는다. 사용자가 새로 확인해 준 위치도 보고 `겪은 문제`에 적고 감독 쪽 pm이 `war-room/PLACES.md`에 적는다. 정한 것·겪은 문제·시도 상태는 보고에 적고 감독 쪽 pm이 지휘 보드에 옮긴다 (남길 겪은 문제는 `war-room/commander/LESSONS.md`). 템플릿 반영 질문도 하지 않는다.
 - 본 체크아웃에서 돌면 자기 war-room 규칙대로 쓴다. 사용자·감독 결정은 `war-room/commander/DECISIONS.md`가 기준이다.
 
 ## 3. 승인

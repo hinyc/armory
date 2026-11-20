@@ -1,6 +1,6 @@
 # 지휘 보드
 
-> 감독 롤 pm(`commander/roles/pm.md`)만 쓴다. 예외: `## 감독 자리`·`## 자리 이력`은 지정·이어받기·해제 때 그 요청을 받은 세션이 쓴다. 바뀐 절만 고친다. 감독 쪽 결정 원문은 `commander/DECISIONS.md`, 감독 쪽 교훈은 `commander/LESSONS.md`에 둔다 (pm). 감독 쪽은 `war-room/` 바로 아래 `STATUS.md`·`DECISIONS.md`·`LESSONS.md`를 쓰지 않는다 (작업 세션 매니저 몫). 규칙은 armory `war-room-commander` 스킬과 `war-room` 스킬 `references/multi-session.md`.
+> 감독 롤 pm(`commander/roles/pm.md`)만 쓴다. 예외: `## 감독 자리`·`## 자리 이력`은 지정·이어받기·해제 때 그 요청을 받은 세션이 쓴다. 바뀐 절만 고친다. 감독 쪽 결정 원문은 `commander/DECISIONS.md`, 감독 쪽 교훈은 `commander/LESSONS.md`에 둔다 (pm). 감독 쪽은 `war-room/` 바로 아래 `STATUS.md`·`DECISIONS.md`·`LESSONS.md`를 쓰지 않는다 (작업 세션 매니저 몫). 예외: 장소 목록 `PLACES.md`는 작업 세션과 같이 쓰는 목록이라 감독 쪽은 pm이 쓴다. 규칙은 armory `war-room-commander` 스킬과 `war-room` 스킬 `references/multi-session.md`.
 
 갱신: -
 
