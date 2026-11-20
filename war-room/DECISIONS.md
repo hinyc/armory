@@ -2,6 +2,21 @@
 
 > 되돌리기 어렵거나 나중에 "왜 이렇게 했지?"가 나올 결정만 적는다. 새 항목은 위에 추가한다. 지난 항목은 고치지 않고, 바뀌면 새 항목으로 뒤집는다.
 
+## 2026-11-20 · 감독이 아닌 제출에서 이 세션의 보낸 표시를 지움
+- 결정: 메인 세션·슬래시 명령 아닌 제출에서 이 세션이 담당 감독이 아니면(해제·이어받기 대기·비어 있음·다른 id·id 줄 없음·commander 또는 war-room 꺼짐) `commanderSent`가 이 세션 id일 때 `''`로 지운다(`ifVersion`). 보드 없음·읽기 실패·상태를 못 읽음이면 지우지 않는다. commanderText는 절대 경로를 빼고 `war-room/COMMAND.md`로, 구현은 작업 세션(없으면 sonnet 작업 에이전트)·분석 등은 po·pm·tpm이라고 적는다(398바이트)
+- 뒤집는 것: 같은 날 "감독 세션을 세션 ID로…" 항목의 "해제 때 보낸 표시는 지우지 않음"
+- 이유: 해제 뒤 같은 세션을 다시 지정하면 전체 지침 없이 알림만 받았다. 지침에 절대 경로가 들어가 실제 경로에서 400바이트를 넘었다(410)
+- 정한 사람: 사용자 ("경미한 문제 남겨두지마"), 지우는 조건·지우지 않는 경우·문구는 매니저·mod-dev 판단
+- 되돌리는 법: hooks/war-room-guard/commander.ts의 clearOwnMark·seatReadable와 findWarRoom 분기, find.ts commanderText 이전 문구, 관련 테스트 12개
+
+## 2026-11-20 · 담당 롤 없는 일은 임시 작업 에이전트(sonnet, 동시 4개)에, 감독 세션은 입력마다 알림
+- 결정: 맞는 롤이 없으면 매니저는 하 등급이라도 직접 하지 않고 임시 작업 에이전트(`general-purpose`, `model: sonnet`, 롤 정의 없음)에 맡긴다. 세션마다 동시 4개까지, 다 돌면 하나가 끝날 때까지 기다린다. 예외는 매니저만 쓰는 파일(STATUS 정리·승인된 교훈)뿐이고, 읽기 전용 조사는 Explore 그대로, 담당 롤이 있는 하 등급 직접 처리 예외 (b)는 유지. 감독 세션은 보드에 맞는 작업 세션이 있으면 `[감독 지시]`로 넘기고 없을 때만 임시 작업 에이전트에 맡긴다(감독 배정 줄 `→ 감독: <작업 세션|작업 에이전트|po|pm|tpm>에 넘깁니다 (…)`). 담당 감독 세션은 첫 입력에 commanderText + commanderReminder, 그 뒤 입력마다 reminder를 submit context로 받고, guardText에 "감독 세션 지침을 받으면 그 지침을 따른다."를 둔다
+- 뒤집는 것: 2026-11-09 위험도 등급 항목의 "하 등급 일만 매니저가 직접"(롤 없는 일에 한해), 감독 세션이 작업 세션이 없으면 사용자에게 세션을 열게 하던 규칙
+- 이유: 0.15.0 감독 세션이 guardText의 "하 등급은 매니저가 직접"을 따라 USB 복사를 직접 시작했다. 감독 지침이 세션 시작(0.15.0)이나 첫 입력에만 들어가 약했다
+- 정한 사람: 사용자 (롤 없는 일은 sonnet 일반 서브에이전트·최대 4개, 감독·작업 세션 모두, 첫 입력에도 알림), 이름 재사용·매니저 전용 파일 예외·Explore 유지·기다림·작업 세션 우선은 매니저 판단
+- 되돌리는 법: skills/war-room/{SKILL.md,references/{delegation,grade,retry,multi-session}.md}, skills/war-room-commander/{SKILL.md,template/commander/commander.md}의 해당 문장, hooks/war-room-guard/find.ts guardText·commanderReminder, commander.ts의 reminder 분기와 테스트를 되돌린다
+- 영향: 위 파일과 hooks/war-room-guard/{commander,war-room-guard}.test.ts. 설치본 반영은 릴리즈 뒤
+
 ## 2026-11-20 · 감독 세션을 세션 ID로 가리고 감독 띠·지침은 담당 세션에만
 - 결정: COMMAND.md `## 감독 자리`에 `- 세션 ID:` 줄을 두고, 지정·이어받기 때 그 세션이 Bash `echo "$CLAUDE_CODE_SESSION_ID"`로 적는다(해제·대기·비어 있음은 `없음`, 서브에이전트는 쓰지 않음). mod는 `$.session.id()`와 비교해 켜짐·맡음·id 일치·메인 세션일 때만 (1) 입력창 위 감독 띠(hooks/commander-band, 2초 폴링, 담당·작업 세션·지시 진행·보고 옴·막힘, 2줄째 판정 대기·점검할 결정·사람 확인·머지 관문·갱신)를 그리고 (2) commanderText를 prompt.compose가 아니라 prompt.submit context로 세션 id마다 한 번 보낸다. 모델의 담당 자기 확인도 "대화에 남은 담당 표시"가 아니라 id 비교로 한다. 옛 보드(id 줄 없음)는 띠·지침 없이 두고 담당 여부를 묻는다. 지금 감독이 다른 세션에 넘기면 1단계 예외로 `이어받기 대기`·id 없음을 적는다(이력은 지정 줄, 마지막 칸 `넘김: <이전 표시>`). 2026-11-20 감독 전용 롤 결정의 "commanderText는 compose(find.ts guard 쪽)" 부분을 뒤집는다
 - 이유: 같은 폴더의 작업 세션·/clear 뒤 세션까지 감독 지침이 붙고, 감독인지 화면에서 알 수 없었다. compose 섹션은 세션 도중 반영되지 않아(2026-11-19) 지정 직후 켜지려면 submit context여야 한다. 평가 흐름 가상테스트 ⑥에서 넘김 경로가 없는 것이 드러나 보완했다

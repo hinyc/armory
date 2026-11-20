@@ -118,16 +118,21 @@ export async function readCommandBoard($: EngineInterface, warRoomDir: string): 
   return typeof text === 'string' ? text : undefined
 }
 
-/** 감독 세션의 제출 context로 한 번 전달하는 지침. 400바이트 이하로 유지한다. */
-export const commanderText = (warRoomDir: string): string =>
-  `감독 세션이다(이 세션 ID가 ${warRoomDir}/COMMAND.md \`## 감독 자리\`의 세션 ID와 같다). war-room 배정 규칙보다 이 지침이 먼저다: 구현·조사는 하 등급도 직접 하지 않고 war-room/commander/ 감독 롤에 맡기며 war-room/roles/ 롤은 쓰지 않는다. 규칙은 armory:war-room-commander. 서브에이전트면 따르지 않는다.`
+/** 감독 세션의 제출 context로 한 번 전달하는 지침. 400바이트 이하로 유지한다. 경로가 문구에 들어가지 않아 폴더가 길어도 크기가 같다. */
+export const commanderText = (_warRoomDir?: string): string =>
+  '감독 세션이다(war-room/COMMAND.md 감독 자리 ID와 같다). 배정 규칙보다 이 지침이 먼저다: 구현은 하 등급도 직접 하지 않고 작업 세션(없으면 sonnet 작업 에이전트)에, 분석·기록·검토는 감독 롤 po·pm·tpm에 맡긴다. war-room/roles/ 롤은 쓰지 않는다. 규칙은 armory:war-room-commander. 서브에이전트면 따르지 않는다.'
+
+/** 감독 세션의 첫 제출 뒤 모든 제출에 붙이는 짧은 알림. 200바이트 이하로 유지한다. 형식은 war-room-commander SKILL.md 5절과 같다. */
+export const commanderReminder = (): string =>
+  '감독 세션이다. 배정 줄은 `→ 감독: <작업 세션|작업 에이전트|po|pm|tpm>에 넘깁니다 (…)`로 쓰고 하 등급도 직접 하지 않는다 (armory:war-room-commander).'
 
 /** 시스템 프롬프트에 넣을 지침. */
 export const guardText = (warRoomDir: string): string =>
   [
     '# war-room',
     `이 프로젝트에는 war-room이 켜져 있다 (${warRoomDir}).`,
-    '사용자 요청을 받으면 파일 읽기·계획·다른 스킬보다 먼저 담당 롤을 찾고, 시작 전에 배정 한 줄(예: `→ frontend 롤에 맡깁니다 (로그인 폼 수정, 등급 중)`)을 알린다. 맞는 롤이 없으면 그렇다고 알리고, 하 등급 일만 매니저가 직접 하고 그 밖은 조사·작업 에이전트에 맡긴다.',
+    '사용자 요청을 받으면 파일 읽기·계획·다른 스킬보다 먼저 담당 롤을 찾고, 시작 전에 배정 한 줄(예: `→ frontend 롤에 맡깁니다 (로그인 폼 수정, 등급 중)`)을 알린다. 맞는 롤이 없으면 그렇다고 알리고, 조사는 Explore에, 일은 롤 없는 sonnet 작업 에이전트(동시 4개까지)에 맡긴다.',
+    '감독 세션 지침을 받으면 그 지침을 따른다.',
     'armory:war-room 스킬은 세션에서 한 번만 부른다. 이미 불렀으면 다시 부르지 않고 읽은 지침대로 한다. 대화가 압축돼 스킬 내용이 보이지 않을 때만 다시 부른다.',
     '예외: 코드 설명·상태 조회처럼 답만 하면 되는 질문.',
     '규칙: ① 배정 줄에 `에이전트 n개 예정`을 적고 더 띄우면 이유 한 줄을 알린다. ② 끝난 에이전트는 SendMessage로 깨우지 않고 새 에이전트에 맡긴다. ③ 요청에 없던 새 기능·명령·화면은 만들지 않고 묻거나 STATUS 다음 할 일에 적는다 (요청한 기능의 보안·정합성 결함 수정은 범위 안). ④ 스크린샷·브라우저 확인·긴 출력은 롤·에이전트에 맡기고 결론만 받는다. ⑤ 중·상 일을 끝냈으면 보고에 새 일 전 /clear를 권한다 (STATUS로 이어진다). ⑥ 앞 내용을 잃어 같은 것을 다시 묻거나 일이 어긋난다고 판단되면 컨텍스트가 부족하다고 말하고 war-room/config.json의 managerCompactAt 상향(예: 300000)을 제안한다. 사용자 승인 전에는 config를 고치지 않는다.',
