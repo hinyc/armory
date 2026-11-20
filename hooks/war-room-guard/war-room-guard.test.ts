@@ -143,6 +143,14 @@ test('config JSON이 깨지면 감독 자리 지침을 넣지 않는다', async 
   expect((await compose($))[2].text).not.toContain('COMMAND.md')
 })
 
+test('commanderText는 담당이면 배정 규칙보다 먼저이고 하 등급도 감독 롤에 맡긴다고 적는다', () => {
+  const text = commanderText('/proj/war-room')
+  expect(text).toContain('위 배정 규칙보다 이 지침이 먼저')
+  expect(text).toContain('하 등급도 직접 하지 않고')
+  expect(text).toContain('commander/roles/ 감독 롤에 맡기며')
+  expect(text).toContain('roles/ 롤은 쓰지 않는다')
+})
+
 test('commanderText는 400바이트 이하다', () => {
   expect(new TextEncoder().encode(commanderText('/proj/war-room')).length).toBeLessThanOrEqual(400)
 })

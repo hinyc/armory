@@ -2,6 +2,13 @@
 
 > 되돌리기 어렵거나 나중에 "왜 이렇게 했지?"가 나올 결정만 적는다. 새 항목은 위에 추가한다. 지난 항목은 고치지 않고, 바뀌면 새 항목으로 뒤집는다.
 
+## 2026-11-20 · 감독 세션은 감독 전용 롤만 쓰고 직접 일하지 않음
+- 결정: 감독은 사용자 요청 분석·배분, 사용자 대화, 위임만 하고 구현·조사는 하 등급도 직접 하지 않는다. 일은 작업 세션에 `[감독 지시]`로 넘기고, 담당 세션이 없으면 ① 기준 브랜치 ② 새로 만들지/기존 세션 다시 열지를 사용자에게 묻는다(세션은 사용자가 연다). 감독 자신의 분석·기록·검토는 감독 전용 롤 po(요구 분석, sonnet, 읽기)·pm(보드 기록, haiku, COMMAND.md만 씀)·tpm(진행 검토·git 확인·이어받기 요약, sonnet, 읽기)에 맡기고 교차 판정은 armory:evaluator. 기존 war-room/roles/ 롤(manager 포함)은 감독 세션에서 쓰지 않는다. 감독 결정·교훈은 보드와 분리해 pm이 war-room/commander/DECISIONS.md·LESSONS.md에 쓰고(보드 COMMAND.md는 자리·세션·지시만, 지시 줄에 기준선 칸), war-room/ 바로 아래 STATUS·DECISIONS·LESSONS는 작업 세션 매니저 몫이다. 교훈을 commander.md·commander/roles/*.md에 반영하는 것은 사용자 승인 줄을 받은 pm만 한다. 예전 판 보드는 지정·이어받기 때 pm이 템플릿에 맞춘다(보드 맞추기). guardText·register.ts는 그대로 두고 commanderText에 "담당이면 배정 규칙보다 먼저" 문구를 넣는다(383바이트, 상한 400). v0.12.0의 "감독 세션의 manager 롤은 감독 자신의 일에 쓴다"를 뒤집는다
+- 이유: 감독은 사용자가 시킨 일을 나누고 진행 상황을 다 알고 있어야 하는 자리다. 매니저는 메인 세션 개념이라 감독의 서브에이전트로 쓰면 이름이 겹치고, 기존 롤은 감독용이 아니다. 작업 세션도 같은 config.json을 보므로 guardText는 바꿀 수 없다
+- 정한 사람: 사용자 (감독 역할·전용 롤·결정·교훈 파일 분리), 파일 배치·가드 문구·모델·교훈 반영 주체(pm)·보드 맞추기는 매니저 판단
+- 되돌리는 법: skills/war-room-commander/template/commander/를 template/commander.md 한 파일로 되돌리고, find.ts commanderText와 테스트 1개, SKILL.md 두 개·multi-session.md·work-session.md·grade.md·retry.md·upgrade.md·README 해당 문장을 되돌린다
+- 영향: skills/war-room-commander/**, skills/war-room/{SKILL.md,references/{multi-session,work-session,grade,retry,upgrade}.md}, hooks/war-room-guard/{find.ts,war-room-guard.test.ts}, README.md
+
 ## 2026-11-19 · 매니저 컨텍스트 부족을 매니저가 말하고 상한 상향을 제안함
 - 결정: guardText 규칙 ⑥으로 매니저가 앞 내용을 잃어 같은 것을 다시 묻거나 일이 어긋난다고 판단하면 컨텍스트가 부족하다고 말하고 war-room/config.json의 managerCompactAt 상향(예: 300000)을 제안한다. 사용자 승인 전에는 config를 고치지 않는다(자동 수정 코드 없음). 긴 대화를 통째로 기억해야 하는 프로젝트의 안내는 README와 delegation.md 6절에 둔다. guardText 바이트 상한은 1,600 → 1,900으로 올린다(2026-11-18 상한을 뒤집음)
 - 이유: 상한은 모델의 100만 토큰 한도가 아니라 매니저 세션의 위임·압축 시점만 정하므로 프로젝트마다 맞는 값이 다르다. 매니저가 판단 신호를 말하고 값은 사용자가 정한다

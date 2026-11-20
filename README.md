@@ -126,19 +126,24 @@ war-room/
 
 ## war-room-commander
 
-war-room 프로젝트에 **감독(commander) 자리**를 만든다. 감독은 매니저 윗급으로, 여러 작업 세션에 `[감독 지시]`를 보내고 `[작업 보고]`를 확인한다 (운영 규칙은 war-room `references/multi-session.md`). 감독·커맨더·총지휘자·지휘자·총매니저는 모두 같은 자리다.
+war-room 프로젝트에 **감독(commander) 자리**를 만든다. 감독은 작업 세션 매니저들 윗급으로, 여러 작업 세션에 `[감독 지시]`를 보내고 `[작업 보고]`를 받는다 (운영 규칙은 war-room `references/multi-session.md`). 감독 세션은 배분·사용자 대화·위임만 하고, 요구 분석은 po, 보드 기록은 pm, 진행 검토(git 기계 확인)는 tpm에 맡긴다. 감독 세션에는 매니저가 없고 `war-room/roles/`의 롤도 쓰지 않는다. 감독·커맨더·총지휘자·지휘자·총매니저는 모두 같은 자리다.
 
 ```
 war-room/
-├─ COMMAND.md          # 지휘 보드: 감독 자리, 위임 범위, 작업 세션, 지시 진행, 교차 판정, 머지 관문, 다시 시작하면 할 일, 자리 이력
-└─ roles/commander.md  # 지정할 때 생김 (배정 대상 아님, 프로젝트별 규칙만)
+├─ COMMAND.md          # 지휘 보드: 감독 자리, 위임 범위, 작업 세션, 지시 진행(기준선 포함), 교차 판정, 점검할 결정, 머지 관문, 다시 시작하면 할 일, 자리 이력
+└─ commander/          # 지정·이어받기 때 없는 것만 생김 (매니저 배정 대상 아님)
+   ├─ commander.md     # 감독 지침과 프로젝트별 규칙
+   ├─ DECISIONS.md     # 감독 결정 로그 (쌓임, pm이 씀)
+   ├─ LESSONS.md       # 감독 시행착오 (사용자 승인된 것만 pm이 반영하고 비움)
+   └─ roles/           # 감독 전용 롤: po.md(요구 분석) · pm.md(보드·감독 결정·교훈 기록과 승인된 교훈 반영, 쓰는 유일한 롤) · tpm.md(진행 검토)
 ```
 
 - 감독은 세션이 아니라 자리에 지정한다. 세션 ID 대신 담당 표시(예: `감독-20261119-1500`)를 보드에 적고, 새 세션은 "감독 이어받기"로 자리를 넘겨받는다. 이전 세션이 끝났는지 확인한 뒤에만 넘겨받는다.
-- 기본으로는 없는 자리다. 지정하면 `config.json`에 `roles.commander: true`가 생기고, 담당 세션에서는 commander 롤이 manager 롤보다 먼저다. 해제하면 `false`로 바뀌고 보드·롤 파일은 이력으로 남는다.
+- 기본으로는 없는 자리다. 지정하면 `config.json`에 `roles.commander: true`가 생기고, 담당 세션은 `roles/manager.md` 대신 `commander/commander.md`를 따른다. 해제하면 `false`로 바뀌고 보드·`commander/` 파일은 이력으로 남는다. 예전 `roles/commander.md`는 다음 지정·이어받기 때 `commander/commander.md`로 옮겨지고, 예전 판 보드는 같은 때 pm이 템플릿 형식으로 맞춘다 (빠진 절 보충, 보드에 있던 결정·교훈 절은 `commander/` 파일로 옮김).
 - 서브에이전트와 연결 워크트리 세션은 감독이 될 수 없다.
-- `war-room-guard` mod는 `roles.commander`가 `true`면 시스템 프롬프트 지침 끝에 "요청을 처리하기 전에 `COMMAND.md`로 이 세션이 담당인지 확인한다"를 붙인다. 시스템 프롬프트는 세션 시작 때 정해지므로 재시작한 세션부터 들어간다.
-- 보드는 STATUS·DECISIONS와 따로 둔다. 세션별 진행은 보드, 결정 원문은 DECISIONS, 세션 안 롤 작업은 STATUS가 원본이다.
+- 감독은 새 세션을 직접 띄우지 않는다. 사용자에게 `git worktree add` 뒤 `claude`, `claude --worktree <이름>`, `claude --resume` 중 맞는 명령을 안내한다.
+- `war-room-guard` mod는 `roles.commander`가 `true`면 시스템 프롬프트 지침 끝에 "요청을 처리하기 전에 `COMMAND.md`로 이 세션이 담당인지 확인한다"를 붙이고, 담당이면 하 등급도 직접 하지 않고 감독 롤에 맡긴다고 덧붙인다. 시스템 프롬프트는 세션 시작 때 정해지므로 재시작한 세션부터 들어간다.
+- 감독 쪽 기록은 작업 세션 매니저의 `war-room/STATUS.md`·`DECISIONS.md`·`LESSONS.md`와 따로 둔다. 세션별 진행은 보드, 감독 쪽 결정·교훈 원문은 `war-room/commander/DECISIONS.md`·`LESSONS.md`(pm이 씀)가 원본이다. 감독 롤은 이 두 파일을 매번 다 읽지 않는다: po는 요청 키워드로 grep해 걸린 항목만, tpm은 이어받기 요약 때 최근 결정 5개만 읽는다. 보드가 20KB를 넘으면 통과한 지시 줄만 archive로 옮기고 자리 이력은 남긴다. 감독 결정·교훈 파일은 작업 세션 쪽 DECISIONS·LESSONS와 같은 규칙으로 `commander/archive/`에 정리한다.
 
 ## question-band
 
