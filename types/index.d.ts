@@ -41,6 +41,24 @@ export type EvalProgress = {
   updatedAt: string
 }
 
+/** 감독 띠가 war-room/COMMAND.md에서 센 값. 계약은 skills/war-room-commander. */
+export type CommanderBand = {
+  /** 담당 표시 (`담당:` 값에서 ` · 위치` 앞까지). 없으면 `–`. */
+  holder: string
+  sessions: number
+  /** 상태가 보냄·보완 지시인 지시 수. */
+  directives: number
+  reports: number
+  blocked: number
+  pending: number
+  decisions: number
+  human: number
+  gateDone: number
+  gateTotal: number
+  /** `MM-DD HH:MM` 또는 `–`. */
+  updated: string
+}
+
 declare module 'claude-code' {
   interface PluginState {
     armory: {
@@ -55,6 +73,10 @@ declare module 'claude-code' {
       compactHold: boolean
       /** 이번 위임값 초과 구간에 위임 전환 지침을 이미 넣었으면 true. 토큰 수가 위임값 아래로 내려가면 false. */
       delegateSent: boolean
+      /** 감독 띠 값. 이 세션이 감독 담당일 때만 값이 있고 2초마다 파일을 다시 읽어 바뀔 때만 갱신. */
+      commanderBand: CommanderBand | null
+      /** 감독 지침을 마지막으로 보낸 세션 id. 빈 문자열이면 아직 안 보냄. */
+      commanderSent: string
     }
   }
 }

@@ -129,15 +129,14 @@ test('guardText는 1900바이트 이하다', () => {
   expect(new TextEncoder().encode(guardOf('/proj/war-room')).length).toBeLessThanOrEqual(1900)
 })
 
-test('roles.commander가 true면 감독 자리 지침을 같은 섹션 끝에 붙인다', async ($, on) => {
+test('roles.commander가 true여도 compose에는 감독 지침을 넣지 않는다(제출 context로 옮김)', async ($, on) => {
   engineBeneath(on, '/proj', { '/proj/war-room/config.json': '{"roles":{"manager":true,"commander":true}}' })
   const sections = await compose($)
   expect(sections.map(s => s.id)).toEqual(['base', 'env', 'armory:war-room'])
   const text = at(sections, 2).text
-  expect(text).toContain('# war-room')
-  expect(text).toContain('/proj/war-room/COMMAND.md')
-  expect(text).toContain('armory:war-room-commander')
-  expect(text.endsWith(commanderText('/proj/war-room'))).toBe(true)
+  expect(text).toBe(guardText('/proj/war-room'))
+  expect(text).not.toContain(commanderText('/proj/war-room'))
+  expect(text).not.toContain('COMMAND.md')
 })
 
 test('roles.commander가 없거나 false면 감독 자리 지침을 넣지 않는다', async ($, on) => {
@@ -152,10 +151,14 @@ test('config JSON이 깨지면 감독 자리 지침을 넣지 않는다', async 
 
 test('commanderText는 담당이면 배정 규칙보다 먼저이고 하 등급도 감독 롤에 맡긴다고 적는다', () => {
   const text = commanderText('/proj/war-room')
-  expect(text).toContain('위 배정 규칙보다 이 지침이 먼저')
+  expect(text).toContain('/proj/war-room/COMMAND.md')
+  expect(text).toContain('세션 ID')
+  expect(text).toContain('배정 규칙보다 이 지침이 먼저')
   expect(text).toContain('하 등급도 직접 하지 않고')
-  expect(text).toContain('commander/roles/ 감독 롤에 맡기며')
-  expect(text).toContain('roles/ 롤은 쓰지 않는다')
+  expect(text).toContain('war-room/commander/ 감독 롤에 맡기며')
+  expect(text).toContain('war-room/roles/ 롤은 쓰지 않는다')
+  expect(text).toContain('armory:war-room-commander')
+  expect(text).toContain('서브에이전트면 따르지 않는다')
 })
 
 test('commanderText는 400바이트 이하다', () => {

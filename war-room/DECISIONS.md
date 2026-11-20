@@ -2,6 +2,14 @@
 
 > 되돌리기 어렵거나 나중에 "왜 이렇게 했지?"가 나올 결정만 적는다. 새 항목은 위에 추가한다. 지난 항목은 고치지 않고, 바뀌면 새 항목으로 뒤집는다.
 
+## 2026-11-20 · 감독 세션을 세션 ID로 가리고 감독 띠·지침은 담당 세션에만
+- 결정: COMMAND.md `## 감독 자리`에 `- 세션 ID:` 줄을 두고, 지정·이어받기 때 그 세션이 Bash `echo "$CLAUDE_CODE_SESSION_ID"`로 적는다(해제·대기·비어 있음은 `없음`, 서브에이전트는 쓰지 않음). mod는 `$.session.id()`와 비교해 켜짐·맡음·id 일치·메인 세션일 때만 (1) 입력창 위 감독 띠(hooks/commander-band, 2초 폴링, 담당·작업 세션·지시 진행·보고 옴·막힘, 2줄째 판정 대기·점검할 결정·사람 확인·머지 관문·갱신)를 그리고 (2) commanderText를 prompt.compose가 아니라 prompt.submit context로 세션 id마다 한 번 보낸다. 모델의 담당 자기 확인도 "대화에 남은 담당 표시"가 아니라 id 비교로 한다. 옛 보드(id 줄 없음)는 띠·지침 없이 두고 담당 여부를 묻는다. 지금 감독이 다른 세션에 넘기면 1단계 예외로 `이어받기 대기`·id 없음을 적는다(이력은 지정 줄, 마지막 칸 `넘김: <이전 표시>`). 2026-11-20 감독 전용 롤 결정의 "commanderText는 compose(find.ts guard 쪽)" 부분을 뒤집는다
+- 이유: 같은 폴더의 작업 세션·/clear 뒤 세션까지 감독 지침이 붙고, 감독인지 화면에서 알 수 없었다. compose 섹션은 세션 도중 반영되지 않아(2026-11-19) 지정 직후 켜지려면 submit context여야 한다. 평가 흐름 가상테스트 ⑥에서 넘김 경로가 없는 것이 드러나 보완했다
+- 정한 사람: 사용자 (감독 전용 표시·담당 세션에만, "최선으로 진행"), env 세션 id·submit 전달·띠 내용·옛 보드 처리·넘김 예외는 매니저·mod-dev·skill-author 판단. Edit/Write 가드는 만들지 않음(오차단 위험, 범위 밖)
+- 되돌리는 법: hooks/commander-band/ 삭제와 hooks/register.ts 등록 제거, hooks/war-room-guard/commander.ts 삭제·register.ts의 commanderContext 제거·compose에 commanderText 복원, find.ts의 Seat·parseSeat·isCommanderSession·readCommandBoard 제거, types 두 키, 테스트, war-room-commander SKILL.md·template COMMAND.md·commander.md·war-room SKILL.md 48행·README 문장 되돌리기
+- 영향: hooks/{register.ts,commander-band/**,war-room-guard/{find,commander,register}.ts,war-room-guard/*.test.ts}, types/index.d.ts, skills/war-room-commander/{SKILL.md,template/COMMAND.md,template/commander/commander.md}, skills/war-room/SKILL.md, README.md
+- 확인 안 됨: 실제 세션에서 띠 표시, `$.session.id()` = echo 값, /clear·resume·compact 뒤 id 변화
+
 ## 2026-11-20 · 장소 목록 PLACES.md를 war-room/에 두고 감독 없이도 씀
 - 결정: 장소 목록을 war-room/PLACES.md 한 곳에 둔다. 매니저와 롤 에이전트가 읽고, 쓰는 것은 작업 세션에서는 매니저, 감독 세션에서는 pm이다(사용자가 확인한 위치만, 비밀 금지). 롤 에이전트는 읽기만 한다. 연결 워크트리 작업 세션은 쓰지 않고 새 위치를 보고에 적는다. 템플릿 판을 5로 올리고, upgrade.py check·apply와 새 `places` 하위 명령이 war-room/commander/PLACES.md를 합쳐 옮긴다(첫 칸 이름으로 구분, 내용이 다르면 확인한 날이 늦은 줄, 같거나 없으면 war-room 쪽). 옮기지 못한 의미 있는 줄이 있으면 옛 파일을 지우지 않고 ✗·종료 3으로 끝낸다(다른 반영은 진행). HTML 주석은 세지 않는다. 같은 날 "감독 전용" 결정을 뒤집는다
 - 이유: 감독이 없는 프로젝트에서도 같은 위치를 매번 묻거나 추측하지 않게 하려고. 1차 구현이 `- ` 아닌 줄을 옮기지 않고 옛 파일을 지워 데이터 손실이 판정에서 드러나 삭제 조건을 막았다

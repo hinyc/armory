@@ -77,9 +77,50 @@ export function isCommanderOn(configText: string): boolean {
   }
 }
 
-/** 감독 자리가 켜졌을 때 guardText 뒤에 붙이는 지침. guardText 상한과 따로 잰다. */
+export type Seat = {
+  readonly status: '맡음' | '이어받기 대기' | '비어 있음' | undefined
+  readonly sessionId: string | undefined
+}
+
+const SEAT_STATUS = /^-\s*상태:\s*(맡음|이어받기 대기|비어 있음)/
+const SEAT_SESSION_ID = /^-\s*세션 ID:\s*([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})(?![0-9a-fA-F-])/
+
+/** COMMAND.md의 `## 감독 자리` 절 줄들(다음 `#`·`##` 헤딩 전까지). 절이 없으면 빈 목록. */
+export function seatSectionLines(commandText: string): readonly string[] {
+  const lines = commandText.split(/\r?\n/)
+  const start = lines.findIndex(line => line.startsWith('## 감독 자리'))
+  if (start < 0) return []
+  const rest = lines.slice(start + 1)
+  const end = rest.findIndex(line => /^#{1,2}\s/.test(line))
+  return end < 0 ? rest : rest.slice(0, end)
+}
+
+/** 보드의 감독 자리 상태와 세션 ID. 절 밖 줄은 보지 않고, 없음·잘못된 uuid는 undefined. */
+export function parseSeat(commandText: string | undefined): Seat {
+  if (commandText === undefined) return { status: undefined, sessionId: undefined }
+  const lines = seatSectionLines(commandText)
+  const status = lines.map(line => SEAT_STATUS.exec(line)?.[1]).find(v => v !== undefined) as Seat['status']
+  const sessionId = lines.map(line => SEAT_SESSION_ID.exec(line)?.[1]).find(v => v !== undefined)
+  return { status, sessionId }
+}
+
+/** 이 세션이 감독 자리를 맡은 세션인지. 서브에이전트 제외는 호출자 몫이다. */
+export function isCommanderSession(configText: string, commandText: string | undefined, sessionId: string): boolean {
+  if (!isEnabledConfig(configText) || !isCommanderOn(configText)) return false
+  if (typeof sessionId !== 'string' || sessionId === '') return false
+  const seat = parseSeat(commandText)
+  return seat.status === '맡음' && seat.sessionId !== undefined && seat.sessionId.toLowerCase() === sessionId.toLowerCase()
+}
+
+/** war-room/COMMAND.md 내용. 읽기 실패는 undefined. */
+export async function readCommandBoard($: EngineInterface, warRoomDir: string): Promise<string | undefined> {
+  const text = await $.fs.read(`${warRoomDir}/COMMAND.md`).catch(() => undefined)
+  return typeof text === 'string' ? text : undefined
+}
+
+/** 감독 세션의 제출 context로 한 번 전달하는 지침. 400바이트 이하로 유지한다. */
 export const commanderText = (warRoomDir: string): string =>
-  `감독 자리 켜짐. ${warRoomDir}/COMMAND.md \`## 감독 자리\`로 담당 여부를 확인한다 (armory:war-room-commander 3절). 담당이면 위 배정 규칙보다 이 지침이 먼저다: 구현·조사는 하 등급도 직접 하지 않고 commander/roles/ 감독 롤에 맡기며 roles/ 롤은 쓰지 않는다. 불확실하면 묻고 답 전엔 보드를 쓰지 않는다.`
+  `감독 세션이다(이 세션 ID가 ${warRoomDir}/COMMAND.md \`## 감독 자리\`의 세션 ID와 같다). war-room 배정 규칙보다 이 지침이 먼저다: 구현·조사는 하 등급도 직접 하지 않고 war-room/commander/ 감독 롤에 맡기며 war-room/roles/ 롤은 쓰지 않는다. 규칙은 armory:war-room-commander. 서브에이전트면 따르지 않는다.`
 
 /** 시스템 프롬프트에 넣을 지침. */
 export const guardText = (warRoomDir: string): string =>
