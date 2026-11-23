@@ -6,7 +6,7 @@
 
 ## 진행 중 (형식: `롤 · 작업 · 등급 · 시도 n/최대 · 남은 실패 기준 · 기준이 적힌 곳(계획·설계 문서 경로)`)
 
-- release · v0.19.0 릴리즈 · 상(정형) · 커밋·push·태그·릴리즈 남음 · -
+- 없음
 
 ## 다음 할 일
 
@@ -62,6 +62,7 @@
 - 없음
 
 ## 최근 완료 (STATUS.md 전체 10KB 이하, 넘치면 오래된 것부터 archive/로)
+- 2026-11-23 · release · v0.19.0 릴리즈(146c7db feat, d7f502b chore, 태그 v0.19.0, https://github.com/hinyc/armory/releases/tag/v0.19.0), 정형, validate 통과·test 171 pass, push는 매니저가 hinyc 전환 후 inyeol-hong 복귀. 이 저장소는 아직 템플릿 5(8 반영은 사용자 답 대기)
 - 2026-11-23 · mod-dev + skill-author · 감독 띠·보드 사람 확인 대기를 사용자 답 없어 멈춘 일만으로(⏸ 멈춘 일 ← 물은 것, 나중 승인은 머지 관문 6번 줄, 조건부 절차 보존, 옛 보드 옮기기), 등급 상, 시도 2/2(시도 1 기준 5 실패), 평가 ③ 6/6 통과 뒤 경미 지적 7건 고침, 에이전트 7개, validate 통과·test 171 pass, templateVersion 8
 - 2026-11-20 · release · v0.18.0 릴리즈(536d800 feat, f67939d chore, 태그 v0.18.0, https://github.com/hinyc/armory/releases/tag/v0.18.0), 정형, validate 통과·test 166 pass, push는 매니저가 hinyc 전환 후 inyeol-hong 복귀. 이 저장소는 아직 템플릿 5(7 반영은 사용자 답 대기)
 - 2026-11-20 · mod-dev + skill-author · 감독이 답 기다리는 질문을 보드 사람 확인 대기에 적고 감독 띠에 `? <무엇>` 줄(최대 3개)로 표시, templateVersion 7, 등급 상, 기준 검토 9건 반영, 평가 ③ 6/6 통과·경미 4건 고침, 에이전트 5개, validate 통과·test 166 pass
