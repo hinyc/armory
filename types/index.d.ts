@@ -41,6 +41,14 @@ export type EvalProgress = {
   updatedAt: string
 }
 
+/** 사용자 답이 없어 멈춘 일 한 줄. work가 빈 문자열이면 옛 헤더 보드이고 ask가 첫 칸(질문)이다. */
+export type WaitingItem = {
+  /** 멈춘 일. */
+  work: string
+  /** 사용자에게 물은 것. 없으면 ''. */
+  ask: string
+}
+
 /** 감독 띠가 war-room/COMMAND.md에서 센 값. 계약은 skills/war-room-commander. */
 export type CommanderBand = {
   /** 담당 표시 (`담당:` 값에서 ` · 위치` 앞까지). 없으면 `–`. */
@@ -53,8 +61,8 @@ export type CommanderBand = {
   pending: number
   decisions: number
   human: number
-  /** 사람 확인 대기 줄의 `무엇` 칸(첫 ` · ` 앞) 전부. 띠가 그릴 때 3개로 자른다. */
-  questions: readonly string[]
+  /** 사람 확인 대기 줄 전부(사용자 답이 없어 멈춘 일). 띠가 그릴 때 3개로 자른다. */
+  waiting: readonly WaitingItem[]
   gateDone: number
   gateTotal: number
   /** `MM-DD HH:MM` 또는 `–`. */

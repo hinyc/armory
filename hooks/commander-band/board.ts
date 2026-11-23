@@ -1,5 +1,5 @@
 // war-room/COMMAND.md 파서: 감독 띠에 쓸 숫자만 센다. 순수 함수. 절 이름은 skills/war-room-commander/template/COMMAND.md 기준.
-import type { CommanderBand } from '../../types'
+import type { CommanderBand, WaitingItem } from '../../types'
 
 const IN_PROGRESS = new Set(['보냄', '보완 지시'])
 
@@ -22,10 +22,22 @@ function items(lines: readonly string[]): readonly string[] {
     .filter((text): text is string => text !== undefined && !isPlaceholder(text))
 }
 
-/** 질문 줄의 `무엇` 칸: 첫 ` · ` 앞. ` · `가 없으면 줄 전체. */
-const whatOf = (item: string): string => {
-  const cut = item.indexOf(' · ')
-  return (cut < 0 ? item : item.slice(0, cut)).trim()
+const NEW_HEADER_MARK = '멈춘 일 · 사용자에게 물은 것'
+
+/** 새 형식: 첫 칸=멈춘 일, 첫·마지막 칸 사이를 다시 이은 것=물은 것(칸 2개면 둘째, 1개면 ''). */
+function waitingOf(item: string): WaitingItem {
+  const cells = item.split(' · ').map(c => c.trim())
+  return { work: cells[0] ?? '', ask: cells.length < 2 ? '' : cells.slice(1, cells.length === 2 ? 2 : -1).join(' · ') }
+}
+
+/** 옛 헤더(`무엇 · …`): 첫 칸이 질문이다. work는 비운다. */
+const legacyWaitingOf = (item: string): WaitingItem => ({ work: '', ask: item.split(' · ')[0]?.trim() ?? '' })
+
+/** `## 사람 확인 대기` 절의 항목을 헤더 형식에 맞게 읽는다. */
+function waitingItems(lines: readonly string[]): readonly WaitingItem[] {
+  const header = lines.find(line => line.startsWith('## 사람 확인 대기')) ?? ''
+  const parse = header.includes(NEW_HEADER_MARK) ? waitingOf : legacyWaitingOf
+  return items(section(lines, '사람 확인 대기')).map(parse)
 }
 
 function holderOf(seat: readonly string[]): string {
@@ -49,7 +61,7 @@ const directiveStatus = (item: string): string => item.split(' · ').at(-2)?.tri
 export function parseBoard(text: string): CommanderBand | undefined {
   if (text.trim() === '') return undefined
   const lines = text.split(/\r?\n/)
-  const human = items(section(lines, '사람 확인 대기'))
+  const waiting = waitingItems(lines)
   const statuses = items(section(lines, '지시')).map(directiveStatus)
   const gate = section(lines, '머지 관문').filter(line => /^-\s*\[[ xX]\]/.test(line))
   return {
@@ -60,8 +72,8 @@ export function parseBoard(text: string): CommanderBand | undefined {
     blocked: statuses.filter(s => s === '막힘').length,
     pending: items(section(lines, '대기 중인 교차 판정')).length,
     decisions: items(section(lines, '점검할 결정')).length,
-    human: human.length,
-    questions: human.map(whatOf),
+    human: waiting.length,
+    waiting,
     gateDone: gate.filter(line => /^-\s*\[[xX]\]/.test(line)).length,
     gateTotal: gate.length,
     updated: updatedOf(lines),
